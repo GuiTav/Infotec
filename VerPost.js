@@ -1,4 +1,4 @@
-import { TouchableOpacity, Image, Text, View, StyleSheet, FlatList } from 'react-native';
+import { Pressable, Image, Text, View, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useState, useEffect } from 'react';
 
 function VerPost(props) {
@@ -45,7 +45,7 @@ function VerPost(props) {
 						}}
 					/>
 				:
-					<></>
+					<ActivityIndicator size={'large'} color={"#190933"} style={{marginTop: 50}}></ActivityIndicator>
 			}
 		</View>
 	);
@@ -56,7 +56,7 @@ function Post({item}) {
 
 	return(
 		<View style={{width: "100%", alignItems: "center"}}>
-			<TouchableOpacity style={styles.card}>
+			<Pressable style={styles.card}>
 				<View style={styles.visualPerfil}>
 					<Image style={styles.fotoPerfil} source={{uri: item["fotoPerfil"]}}/>
 					<Text>{item["nomeUsuario"]}</Text>
@@ -67,7 +67,7 @@ function Post({item}) {
 				</View>
 				<Arquivos resp={item}/>
 				
-			</TouchableOpacity>
+			</Pressable>
 		</View>
 	);
 }
@@ -86,8 +86,25 @@ function Arquivos(props) {
 	return(
 		idsAnexo.map((element, index) => {
 			return (
-				<View key={index} style={{width: "100%", padding: 10, backgroundColor: "#eee", borderRadius: 15, borderWidth: 1, borderColor: "#ccc", marginTop: 5}}>
-					<Text style={{color: "black", width: "100%", fontSize: 15}}>{nomesAnexo[index]}</Text>
+				<View key={index} style={{
+					width: "100%",
+					flexDirection: 'row',
+					alignItems: "center",
+					padding: 10,
+					backgroundColor: "#eee",
+					borderRadius: 15,
+					borderWidth: 1,
+					borderColor: "#ccc",
+					marginTop: 5
+				}}>
+					<Image source={require('./assets/IconArquivo.png')} style={{
+						height: 20,
+						width: 20,
+						marginRight: 5,
+						resizeMode: "contain",
+						tintColor: "#777"
+					}}/>
+					<Text style={{color: "#555", width: "100%", fontSize: 15}}>{nomesAnexo[index]}</Text>
 				</View>
 			)
 		})
@@ -103,7 +120,7 @@ const styles = StyleSheet.create({
 	},
 
 	card:{
-		elevation: 10,
+		elevation: 3,
 		backgroundColor: "white",
 		marginVertical: 8,
 		width: "90%",

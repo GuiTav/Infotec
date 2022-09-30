@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, View,Image, StatusBar, TouchableOpacity, Keyboard, SafeAreaView } from 'react-native';
+import { StyleSheet, View,Image, StatusBar, Pressable, Keyboard, SafeAreaView } from 'react-native';
 import VerPost from './VerPost';
 import CriaPost from './CriaPost';
 
@@ -8,7 +8,7 @@ export default function App() {
 
 	/* -------------- Parte lógica -------------- */
 	
-	var ipAddress = '' /* Defina o ip da máquina host quando for testar */
+	var ipAddress = '192.168.0.7' /* Defina o ip da máquina host quando for testar */
 
 
 	const [telaAtual, setTelaAtual] = useState("inicio");
@@ -81,18 +81,20 @@ export default function App() {
 	return (
 	<SafeAreaView style={styles.container}>
 		<View style={styles.cabecalho}>
-			<Image style={styles.logo} source={require('./assets/IconeInfotecTopApp.png')}/>
+			<Pressable style={styles.btnLogo} onPress={() => {setTelaAtual("inicio")}}>
+				<Image style={styles.logo} source={require('./assets/IconeInfotecTopApp.png')}/>
+			</Pressable>
 
 			<View style={styles.headerBtns}>
-				<TouchableOpacity style={[styles.btnCabecalho, intStyles.btnAddPost]} onPress={() => {setTelaAtual("criaPost")}}>
+				<Pressable style={[styles.btnCabecalho, intStyles.btnAddPost]} onPress={() => {setTelaAtual("criaPost")}}>
 					<Image style={styles.imgCabecalho} source={telaAtual == "criaPost" ? require('./assets/BtnAddTopSelectApp.png') : require('./assets/BtnAddTopApp.png')}/>
-				</TouchableOpacity>
-				<TouchableOpacity style={styles.btnCabecalho}>
+				</Pressable>
+				<Pressable style={styles.btnCabecalho}>
 					<Image style={styles.imgCabecalho} source={require('./assets/BtnFilterTopApp.png')}/>
-				</TouchableOpacity>
-				<TouchableOpacity style={styles.btnCabecalho}>
+				</Pressable>
+				<Pressable style={styles.btnCabecalho}>
 					<Image style={styles.imgCabecalho} source={require('./assets/BtnConfigTopApp.png')}/>
-				</TouchableOpacity>
+				</Pressable>
 			</View>
 		</View>
 
@@ -105,15 +107,15 @@ export default function App() {
 
 		{!keyboardActive ?
 		<View style={[styles.rodape, intStyles.rodape]}>
-			<TouchableOpacity style={[styles.btnRodape, intStyles.btnInicio]} onPress={() => {setTelaAtual("inicio")}}>
+			<Pressable style={[styles.btnRodape, intStyles.btnInicio]} onPress={() => {setTelaAtual("inicio")}}>
 				<Image style={styles.imgRodape} source={telaAtual == 'inicio' ? require('./assets/BtnInicioSelectBTApp.png') : require('./assets/BtnInicioBTApp.png')}></Image>
-			</TouchableOpacity>
-			<TouchableOpacity style={[styles.btnRodape, intStyles.btnCalendario]} onPress={() => {setTelaAtual("calendario")}}>
+			</Pressable>
+			<Pressable style={[styles.btnRodape, intStyles.btnCalendario]} onPress={() => {setTelaAtual("calendario")}}>
 				<Image style={styles.imgRodape} source={telaAtual == 'calendario' ? require('./assets/BtnCalendarioSelectBTApp.png') : require('./assets/BtnCalendarioBTApp.png')}></Image>
-			</TouchableOpacity>
-			<TouchableOpacity style={[styles.btnRodape, intStyles.btnHorarios]} onPress={() => {setTelaAtual("horario")}}>
+			</Pressable>
+			<Pressable style={[styles.btnRodape, intStyles.btnHorarios]} onPress={() => {setTelaAtual("horario")}}>
 				<Image style={styles.imgRodape} source={telaAtual == 'horario' ? require('./assets/BtnHorarioSelectBTApp.png') : require('./assets/BtnHorarioBTApp.png')}></Image>
-			</TouchableOpacity>
+			</Pressable>
 		</View> : <View/>}
 
 		<StatusBar backgroundColor="transparent"></StatusBar>
@@ -135,14 +137,20 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		height: 60,
 		paddingTop: 5,
-		paddingHorizontal: 3,
-		justifyContent: "space-between"
+		paddingHorizontal: 10,
+		justifyContent: "space-between",
+		alignItems: "center"
+	},
+
+	btnLogo: {
+		height: "100%",
+		width: "40%",
+		justifyContent: "center"
 	},
 
 	logo: {
-		height: "100%",
-		maxWidth: "40%",
-		marginLeft: "3%",
+		height: "80%",
+		width: "100%",
 		resizeMode: "contain"
 	},
 	
@@ -171,24 +179,26 @@ const styles = StyleSheet.create({
 
 
 	rodape: {
-		height: 80,
+		height: 50,
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-evenly",
 		backgroundColor: "#eee",
-		paddingTop: 1
+		paddingTop: 2
 	},
 
 	imgRodape: {
 		resizeMode: "center",
-		width: "100%",
-		height: "100%"
+		width: "50%",
+		height: "50%"
 	},
 
 	btnRodape: {
 		flex: 1,
 		height: "100%",
-		backgroundColor: "white"
+		backgroundColor: "white",
+		alignItems: "center",
+		justifyContent: "center"
 	},
 
 });
