@@ -8,18 +8,23 @@ function VerPost(props) {
 	const[respFetch, setRespFetch] = useState();
 	const[refreshing, setRefreshing] = useState(true);
 
+
+	/* ------------------- FUNÇÕES NÃO VISUAIS ---------------- */
+
 	async function getPosts() {
 		setRefreshing(true);
 		try {
-			var respCrua = await fetch("http://" + ipAddress + ":8000/publiCompleta");
+			const controller = new AbortController();
+			setTimeout(() => {controller.abort()}, 10000)
+			var respCrua = await fetch("http://" + ipAddress + ":8000/publiCompleta", {signal: controller.signal});
 			var resposta = await respCrua.json();
 			setRespFetch(resposta);
 		} catch (error) {
-			throw error;
+			console.log(error);
+			setRespFetch({resposta: "", erro: "Não foi possivel conectar com o servidor"});
 		}
 
 		setRefreshing(false);
-
 		return;
 	}
 
@@ -38,7 +43,7 @@ function VerPost(props) {
 						data={respFetch['resposta']}
 						renderItem={Post}
 						keyExtractor={item => item.idPublicacao}
-						ListEmptyComponent={<Text style={{fontSize: 25, marginTop: 30, width: "100%", textAlign: "center"}}>{respFetch["erro"]}</Text>}
+					ListEmptyComponent={<Text style={{fontSize: 25, marginTop: 30, paddingHorizontal: "10%", textAlign: "center"}}>{respFetch["erro"]}</Text>}
 						refreshing={refreshing}
 						onRefresh={() => {
 							getPosts();
@@ -51,6 +56,8 @@ function VerPost(props) {
 	);
 }
 
+
+/* -------------------- ELEMENTOS REACT --------------------- */
 
 function Post({item}) {
 

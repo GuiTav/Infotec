@@ -1,7 +1,21 @@
 
-import { useState } from "react";
-import { StyleSheet, View, TextInput, TouchableOpacity, Text, Pressable, Modal, ScrollView, Image} from "react-native";
+import { useState, useEffect } from "react";
+import { StyleSheet, View, TextInput, Text, Pressable, Modal, ScrollView, Image, ToastAndroid} from "react-native";
 import RNDateTimePicker from "@react-native-community/datetimepicker";
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
+
+
+
+
+/* TO DO:
+
+O programa está bugando na hora de ler os anexos disponíveis, dentro da função map.
+O arquivo que deveria ser deletado é exatamente o que é exibido.
+Aparentemente os outros trechos de código estão normais, o problema é quando chega exatamente na função map.
+
+*/
+
 
 function CriaPost() {
 
@@ -9,11 +23,59 @@ function CriaPost() {
     const[categoria, setCategoria] = useState("");
     const[calendarVisible, setCalendarVisible] = useState(false);
     const[dataValid, setDataValid] = useState(new Date());
+    const[anexos, setAnexos] = useState([]);
 
     var categorias = ["COMUNICADOS GERAIS", "1ºs ANOS", "2ºs ANOS", "3ºs ANOS", "DESENV. DE SISTEMAS", "ADMINISTRAÇÃO",
     , "CONTABILIDADE", "CANTINA", "VAGAS DE EMPREGO", "EVENTOS", "VESTIBULARES"];
 
 
+
+    /* ------------------------ FUNÇÕES NÃO VISUAIS ---------------------- */
+
+    useEffect(() => {
+        FileSystem.deleteAsync(FileSystem.cacheDirectory + "DocumentPicker", {idempotent: true});
+    }, []);
+
+
+    async function achaArquivo() {
+        var promise = await DocumentPicker.getDocumentAsync();
+        if (promise.type == 'cancel') {
+            return;
+        }
+        if (promise.size > 16777216) {
+            ToastAndroid.show("Não é possível selecionar arquivos maiores que 16Mb", ToastAndroid.SHORT);
+            await FileSystem.deleteAsync(promise.uri);
+            return;
+        }
+
+        setAnexos([...anexos, promise]);
+        return;
+    }
+
+    async function excluiArquivo(id) {
+        var arquivo = anexos[id];
+        await FileSystem.deleteAsync(arquivo.uri);
+        setAnexos(anexos.splice(id, 1));
+        return;
+    }
+
+
+    async function teste() {
+        var diretorio = await FileSystem.readDirectoryAsync(FileSystem.cacheDirectory + "DocumentPicker");
+        console.log(diretorio);
+        return;
+    }
+
+    /* async function rodarImg() {
+        var arquivos = await FileSystem.readDirectoryAsync(FileSystem.cacheDirectory + "DocumentPicker");
+        var imagem = FileSystem.cacheDirectory + "DocumentPicker/" + arquivos[0];
+        var binario = await FileSystem.readAsStringAsync(imagem, {encoding: "base64"});
+        setBinario(binario);
+        return;
+    } */
+
+
+    /* ----------------------- ESTILOS INTERATIVOS -------------------- */
 
     const intStyles = StyleSheet.create(
         categoria != "" ? {
@@ -23,10 +85,18 @@ function CriaPost() {
 
             txtCategoria: {
                 color: "#ff3366"
+            },
+
+            setaCateg: {
+                tintColor: "#ff3366",
+                opacity: 0.9
             }
         } : {}
     )
 
+
+
+    /* ------------------------ RETURN PRINCIPAL ------------------------ */
 
     return(
         <ScrollView>
@@ -55,17 +125,24 @@ function CriaPost() {
                     </View>
                 </Pressable>
             </Modal>
+
+
+
             <Text style={styles.titulo}>NOVA POSTAGEM</Text>
             <View style={styles.geral}>
                 <TextInput style={styles.textbox} placeholder='Título' multiline={true}></TextInput>
+
                 <Pressable
                     style={[styles.btnCategoria, intStyles.btnCategoria]}
                     onPress={() => {setCategVisible(true)}}>
                     <Text style={[styles.txtCategoria, intStyles.txtCategoria]}>
                         {categoria == "" ? "Selecione uma categoria" : categoria}
                     </Text>
+                    <Image source={require("./assets/SetaBaixo.png")} style={[{width: 20, height: 20}, intStyles.setaCateg]}/>
                 </Pressable>
+
                 <TextInput style={[styles.textbox]} multiline={true} placeholder='Mensagem'/>
+                
                 <Pressable style={styles.btnCalendario} onPress={() => {setCalendarVisible(true)}}>
                     <Image source={require("./assets/BtnCalendarioBTApp.png")} style={styles.btnCalendarioImg}/>
                     <View>
@@ -78,15 +155,47 @@ function CriaPost() {
                     </View>
                 </Pressable>
                 {calendarVisible ?
-                    <RNDateTimePicker onChange={(event, date) => {setDataValid(date); setCalendarVisible(false)}} value={new Date()}/> :
+                    <RNDateTimePicker
+                        mode="date"
+                        onChange={(event, date) => {setCalendarVisible(false); setDataValid(date)}}
+                        value={new Date()}
+                        minimumDate={new Date()}/>
+                    :
                     <></>
                 }
-                <TouchableOpacity style={styles.btnEnviar}><Text style={styles.txtBtnEnviar}>Enviar</Text></TouchableOpacity>
+
+                
+                <View style={styles.anexos}>
+                    <Text style={{fontSize: 20, marginBottom: 5}}>Anexos:</Text>
+                    {
+                        anexos.map((value, index) => {
+                            console.log(anexos);
+                            return(
+                                <View key={index} style={{flexDirection: "row", marginTop: 5, alignItems: "center", justifyContent: "space-between"}}>
+                                    <Text style={{fontSize: 15, maxWidth: "70%"}}>{value.name}</Text>
+                                    <Pressable style={{padding: 5}} onPress={() => {excluiArquivo(index)}}><Text style={{fontSize: 15, color: "red"}}>Deletar</Text></Pressable>
+                                </View>
+                            )
+                        })
+                    }
+                    <Pressable style={styles.btnAddAnexo} onPress={() => {achaArquivo()}}>
+                        <Image source={require("./assets/BtnAddTopApp.png")} style={{height: 25, width: 25, resizeMode: "contain", marginRight: 5}}/>
+                        <Text style={{fontSize: 18}}>Adicionar um anexo</Text>
+                    </Pressable>
+                </View>
+
+
+                <Pressable style={styles.btnEnviar}><Text style={styles.txtBtnEnviar} onPress={() => {teste()}}>Enviar</Text></Pressable>
+
+                {/* <Image style={{width: 200, height: 200, backgroundColor: 'red'}}
+                source={binario != null ? {uri: "data:image/png;base64," + binario} : {}}  /> */}
             </View>
         </ScrollView>
     );
 }
 
+
+/* --------------------- ESTILOS GERAIS --------------------- */
 
 const styles = StyleSheet.create({
     geral: {
@@ -115,10 +224,14 @@ const styles = StyleSheet.create({
     },
 
     btnCategoria: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
         backgroundColor: "#eee",
         borderWidth: 1,
         borderColor: "#190933",
-        padding: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 15,
         marginTop: 15,
         borderRadius: 20
     },
@@ -145,6 +258,26 @@ const styles = StyleSheet.create({
         marginRight: 10,
         marginLeft: 5,
         resizeMode: "contain"
+    },
+
+    anexos: {
+        padding: 15,
+        borderWidth: 1,
+        borderRadius: 15,
+        marginTop: 20,
+        backgroundColor: "#f5f5f5"
+    },
+
+    btnAddAnexo: {
+        paddingHorizontal: 10,
+        paddingVertical: 7,
+        borderRadius: 10,
+        borderWidth: 1,
+        marginTop: 15,
+        alignSelf: "flex-start",
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "white"
     },
 
     btnEnviar: {

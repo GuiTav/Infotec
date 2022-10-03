@@ -135,8 +135,7 @@ const styles = StyleSheet.create({
 
 	cabecalho: {
 		flexDirection: "row",
-		height: 60,
-		paddingTop: 5,
+		height: 50,
 		paddingHorizontal: 10,
 		justifyContent: "space-between",
 		alignItems: "center"
