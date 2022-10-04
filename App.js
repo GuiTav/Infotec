@@ -8,7 +8,7 @@ export default function App() {
 
 	/* -------------- Parte lógica -------------- */
 	
-	var ipAddress = '192.168.0.7' /* Defina o ip da máquina host quando for testar */
+	var ipAddress = '' /* Defina o ip da máquina host quando for testar */
 
 
 	const [telaAtual, setTelaAtual] = useState("inicio");
@@ -101,7 +101,7 @@ export default function App() {
 
 		<View style={{flex: 1}}>
 
-			{telaAtual == "inicio" ? <VerPost ip={ipAddress}/>:<CriaPost/>}
+			{telaAtual == "inicio" ? <VerPost ip={ipAddress}/>:<CriaPost ip={ipAddress}/>}
 
 		</View>
 

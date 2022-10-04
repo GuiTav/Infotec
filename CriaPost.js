@@ -4,26 +4,22 @@ import { StyleSheet, View, TextInput, Text, Pressable, Modal, ScrollView, Image,
 import RNDateTimePicker from "@react-native-community/datetimepicker";
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
+import { Buffer } from 'buffer';
 
 
 
+function CriaPost(props) {
 
-/* TO DO:
+    const ipAddress = props.ip;
 
-O programa está bugando na hora de ler os anexos disponíveis, dentro da função map.
-O arquivo que deveria ser deletado é exatamente o que é exibido.
-Aparentemente os outros trechos de código estão normais, o problema é quando chega exatamente na função map.
-
-*/
-
-
-function CriaPost() {
-
+    const[titulo, setTitulo] = useState("");
     const[categVisible, setCategVisible] = useState(false);
     const[categoria, setCategoria] = useState("");
+    const[conteudo, setConteudo] = useState("");
     const[calendarVisible, setCalendarVisible] = useState(false);
     const[dataValid, setDataValid] = useState(new Date());
     const[anexos, setAnexos] = useState([]);
+    const idAutor = 1; // Este ID deve vir de fora da tela. Por enquanto ele vai ser só mudado por aqui
 
     var categorias = ["COMUNICADOS GERAIS", "1ºs ANOS", "2ºs ANOS", "3ºs ANOS", "DESENV. DE SISTEMAS", "ADMINISTRAÇÃO",
     , "CONTABILIDADE", "CANTINA", "VAGAS DE EMPREGO", "EVENTOS", "VESTIBULARES"];
@@ -33,6 +29,7 @@ function CriaPost() {
     /* ------------------------ FUNÇÕES NÃO VISUAIS ---------------------- */
 
     useEffect(() => {
+        /* Apenas limpando o cache antes de executar qualquer coisa */
         FileSystem.deleteAsync(FileSystem.cacheDirectory + "DocumentPicker", {idempotent: true});
     }, []);
 
@@ -55,24 +52,58 @@ function CriaPost() {
     async function excluiArquivo(id) {
         var arquivo = anexos[id];
         await FileSystem.deleteAsync(arquivo.uri);
-        setAnexos(anexos.splice(id, 1));
+        var novoArray = anexos;
+        novoArray.splice(id, 1);
+        setAnexos([...novoArray]);
         return;
     }
 
 
-    async function teste() {
-        var diretorio = await FileSystem.readDirectoryAsync(FileSystem.cacheDirectory + "DocumentPicker");
-        console.log(diretorio);
+    async function enviaPost() {
+        if (titulo == "" || categoria == "" || conteudo == "") {
+            ToastAndroid.show("Os campos 'título', 'categoria' e 'conteudo' são obrigatórios.", ToastAndroid.SHORT);
+            return;
+        }
+
+        var request = {tabela: "publicacao", dados: [
+            titulo,
+            new Date().toISOString().split("T")[0],
+            categoria,
+            dataValid.toISOString().split("T")[0],
+            new Date().toISOString().split("T")[0],
+            conteudo,
+            idAutor
+        ]};
+
+        if (anexos.length != 0) {
+
+            var blobs = [];
+            for (let i = 0; i < anexos.length; i++) {
+                var elemento = anexos[i];
+                var arquivo = await FileSystem.readAsStringAsync(elemento.uri, {encoding: "base64"});
+                blobs = [...blobs, "0x" + Buffer.from(arquivo, "base64").toString("hex")];
+            }
+
+            request["anexo"] = anexos.map((value, index) => {
+                return ([blobs[index], value.name]);
+            })
+        }
+
+        var json = JSON.stringify(request);
+        try {
+            var result = await fetch("http://" + ipAddress + ":8000", {body: json, method: "POST"});
+            var resultJson = await result.json();
+            if (resultJson.erro != "") {
+                throw resultJson.erro;
+            }
+        } catch (error) {
+            console.log(error);
+            return;
+        }
+
+        ToastAndroid.show("Post realizado com sucesso!", ToastAndroid.SHORT);
         return;
     }
-
-    /* async function rodarImg() {
-        var arquivos = await FileSystem.readDirectoryAsync(FileSystem.cacheDirectory + "DocumentPicker");
-        var imagem = FileSystem.cacheDirectory + "DocumentPicker/" + arquivos[0];
-        var binario = await FileSystem.readAsStringAsync(imagem, {encoding: "base64"});
-        setBinario(binario);
-        return;
-    } */
 
 
     /* ----------------------- ESTILOS INTERATIVOS -------------------- */
@@ -99,98 +130,98 @@ function CriaPost() {
     /* ------------------------ RETURN PRINCIPAL ------------------------ */
 
     return(
-        <ScrollView>
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={categVisible}
-                onRequestClose={() => {
-                    setCategVisible(false)
-                }}>
-                <Pressable style={styles.modalBackground} onPress={() => {setCategVisible(false)}}>
-                    <View style={styles.modalView}>
-                        <ScrollView>
-                            {categorias.map((value, index) => {
-                                return(
-                                    <Pressable style={{width: "100%", height: 60, justifyContent: "center"}} key={index}
-                                        onPress={() => {
-                                            setCategoria(value);
-                                            setCategVisible(false);    
-                                        }}>
-                                        <Text style={{fontSize: 20, textAlign: "center"}}>{value}</Text>
-                                    </Pressable>
-                                );
-                            })}
-                        </ScrollView>
-                    </View>
-                </Pressable>
-            </Modal>
-
-
-
-            <Text style={styles.titulo}>NOVA POSTAGEM</Text>
-            <View style={styles.geral}>
-                <TextInput style={styles.textbox} placeholder='Título' multiline={true}></TextInput>
-
-                <Pressable
-                    style={[styles.btnCategoria, intStyles.btnCategoria]}
-                    onPress={() => {setCategVisible(true)}}>
-                    <Text style={[styles.txtCategoria, intStyles.txtCategoria]}>
-                        {categoria == "" ? "Selecione uma categoria" : categoria}
-                    </Text>
-                    <Image source={require("./assets/SetaBaixo.png")} style={[{width: 20, height: 20}, intStyles.setaCateg]}/>
-                </Pressable>
-
-                <TextInput style={[styles.textbox]} multiline={true} placeholder='Mensagem'/>
-                
-                <Pressable style={styles.btnCalendario} onPress={() => {setCalendarVisible(true)}}>
-                    <Image source={require("./assets/BtnCalendarioBTApp.png")} style={styles.btnCalendarioImg}/>
-                    <View>
-                        <Text style={{fontSize: 15, color: "#ff3366"}}>
-                            Escolha uma data de validade
-                        </Text>
-                        <Text style={{fontSize: 15, color: "#ff3366"}}>
-                            {"Data: " + dataValid.getDate() + "/" + (dataValid.getMonth() + 1) + "/" + dataValid.getFullYear()}
-                        </Text>
-                    </View>
-                </Pressable>
-                {calendarVisible ?
-                    <RNDateTimePicker
-                        mode="date"
-                        onChange={(event, date) => {setCalendarVisible(false); setDataValid(date)}}
-                        value={new Date()}
-                        minimumDate={new Date()}/>
-                    :
-                    <></>
-                }
-
-                
-                <View style={styles.anexos}>
-                    <Text style={{fontSize: 20, marginBottom: 5}}>Anexos:</Text>
-                    {
-                        anexos.map((value, index) => {
-                            console.log(anexos);
+    <ScrollView>
+        <Modal
+            animationType="fade"
+            transparent={true}
+            visible={categVisible}
+            onRequestClose={() => {
+                setCategVisible(false)
+            }}>
+            <Pressable style={styles.modalBackground} onPress={() => {setCategVisible(false)}}>
+                <View style={styles.modalView}>
+                    <ScrollView>
+                        {categorias.map((value, index) => {
                             return(
-                                <View key={index} style={{flexDirection: "row", marginTop: 5, alignItems: "center", justifyContent: "space-between"}}>
-                                    <Text style={{fontSize: 15, maxWidth: "70%"}}>{value.name}</Text>
-                                    <Pressable style={{padding: 5}} onPress={() => {excluiArquivo(index)}}><Text style={{fontSize: 15, color: "red"}}>Deletar</Text></Pressable>
-                                </View>
-                            )
-                        })
-                    }
-                    <Pressable style={styles.btnAddAnexo} onPress={() => {achaArquivo()}}>
-                        <Image source={require("./assets/BtnAddTopApp.png")} style={{height: 25, width: 25, resizeMode: "contain", marginRight: 5}}/>
-                        <Text style={{fontSize: 18}}>Adicionar um anexo</Text>
-                    </Pressable>
+                                <Pressable style={{width: "100%", height: 60, justifyContent: "center"}} key={index}
+                                    onPress={() => {
+                                        setCategoria(value);
+                                        setCategVisible(false);    
+                                    }}>
+                                    <Text style={{fontSize: 20, textAlign: "center"}}>{value}</Text>
+                                </Pressable>
+                            );
+                        })}
+                    </ScrollView>
                 </View>
+            </Pressable>
+        </Modal>
 
 
-                <Pressable style={styles.btnEnviar}><Text style={styles.txtBtnEnviar} onPress={() => {teste()}}>Enviar</Text></Pressable>
 
-                {/* <Image style={{width: 200, height: 200, backgroundColor: 'red'}}
-                source={binario != null ? {uri: "data:image/png;base64," + binario} : {}}  /> */}
+        <Text style={styles.titulo}>NOVA POSTAGEM</Text>
+        <View style={styles.geral}>
+            <TextInput style={styles.textbox} placeholder='Título' multiline={true} onChangeText={(text) => {
+                setTitulo(text);
+            }}></TextInput>
+
+            <Pressable
+                style={[styles.btnCategoria, intStyles.btnCategoria]}
+                onPress={() => {setCategVisible(true)}}>
+                <Text style={[styles.txtCategoria, intStyles.txtCategoria]}>
+                    {categoria == "" ? "Selecione uma categoria" : categoria}
+                </Text>
+                <Image source={require("./assets/SetaBaixo.png")} style={[{width: 20, height: 20}, intStyles.setaCateg]}/>
+            </Pressable>
+
+            <TextInput style={[styles.textbox]} multiline={true} placeholder='Mensagem' onChangeText={(text) => {
+                setConteudo(text);
+            }}/>
+            
+            <Pressable style={styles.btnCalendario} onPress={() => {setCalendarVisible(true)}}>
+                <Image source={require("./assets/BtnCalendarioBTApp.png")} style={styles.btnCalendarioImg}/>
+                <View>
+                    <Text style={{fontSize: 15, color: "#ff3366"}}>
+                        Escolha uma data de validade
+                    </Text>
+                    <Text style={{fontSize: 15, color: "#ff3366"}}>
+                        {"Data: " + dataValid.getDate() + "/" + (dataValid.getMonth() + 1) + "/" + dataValid.getFullYear()}
+                    </Text>
+                </View>
+            </Pressable>
+            {calendarVisible ?
+                <RNDateTimePicker
+                    mode="date"
+                    onChange={(event, date) => {setCalendarVisible(false); setDataValid(date)}}
+                    value={dataValid}
+                    minimumDate={new Date()}/>
+                :
+                <></>
+            }
+
+            
+            <View style={styles.anexos}>
+                <Text style={{fontSize: 20, marginBottom: 5}}>Anexos:</Text>
+                {
+                    anexos.map((value, index) => {
+                        return(
+                            <View key={index} style={{flexDirection: "row", marginTop: 5, alignItems: "center", justifyContent: "space-between"}}>
+                                <Text style={{fontSize: 15, maxWidth: "70%"}}>{value.name}</Text>
+                                <Pressable style={{padding: 5}} onPress={() => {excluiArquivo(index)}}><Text style={{fontSize: 15, color: "red"}}>Deletar</Text></Pressable>
+                            </View>
+                        )
+                    })
+                }
+                <Pressable style={styles.btnAddAnexo} onPress={() => {achaArquivo()}}>
+                    <Image source={require("./assets/BtnAddTopApp.png")} style={{height: 25, width: 25, resizeMode: "contain", marginRight: 5}}/>
+                    <Text style={{fontSize: 18}}>Adicionar um anexo</Text>
+                </Pressable>
             </View>
-        </ScrollView>
+
+
+            <Pressable style={styles.btnEnviar}><Text style={styles.txtBtnEnviar} onPress={() => {enviaPost()}}>Enviar</Text></Pressable>
+        </View>
+    </ScrollView>
     );
 }
 

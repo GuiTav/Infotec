@@ -20,7 +20,6 @@ function VerPost(props) {
 			var resposta = await respCrua.json();
 			setRespFetch(resposta);
 		} catch (error) {
-			console.log(error);
 			setRespFetch({resposta: "", erro: "Não foi possivel conectar com o servidor"});
 		}
 
