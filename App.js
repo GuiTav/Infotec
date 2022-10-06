@@ -1,18 +1,36 @@
+
 import { useState, useEffect } from 'react';
-import { StyleSheet, View,Image, StatusBar, Pressable, Keyboard, SafeAreaView } from 'react-native';
+import { StyleSheet, View,Image, StatusBar, Pressable, Keyboard, SafeAreaView, } from 'react-native';
 import VerPost from './VerPost';
 import CriaPost from './CriaPost';
 
+
 export default function App() {
 
-
-	/* -------------- Parte lógica -------------- */
-	
-	var ipAddress = '' /* Defina o ip da máquina host quando for testar */
-
+	const ipAddress = '192.168.0.7' /* Defina o ip da máquina host quando for testar */
+	const categorias = ["COMUNICADOS GERAIS", "1ºs ANOS", "2ºs ANOS", "3ºs ANOS", "DESENV. DE SISTEMAS",
+	"ADMINISTRAÇÃO", "CONTABILIDADE", "CANTINA", "VAGAS DE EMPREGO", "EVENTOS", "VESTIBULARES"];
 
 	const [telaAtual, setTelaAtual] = useState("inicio");
 	const [keyboardActive, setKeyboardActive] = useState(false);
+	const [filterActive, setFilterActive] = useState(false);
+
+
+	/* -------------- FUNÇÕES NÃO VISUAIS -------------- */
+
+	function trocaTela() {
+		switch (telaAtual) {
+			case "inicio":
+				return <VerPost ip={ipAddress} filter={filterActive} categ={categorias}/>
+			
+			case "criaPost":
+				return <CriaPost ip={ipAddress} categ={categorias}/>
+		
+			default:
+				return <></>;
+		}
+	}
+
 	
 	useEffect(() => {
 		Keyboard.addListener('keyboardDidShow', () => {
@@ -80,17 +98,27 @@ export default function App() {
 
 	return (
 	<SafeAreaView style={styles.container}>
+
+		{/* Cabecalho */}
+
 		<View style={styles.cabecalho}>
 			<Pressable style={styles.btnLogo} onPress={() => {setTelaAtual("inicio")}}>
 				<Image style={styles.logo} source={require('./assets/IconeInfotecTopApp.png')}/>
 			</Pressable>
 
-			<View style={styles.headerBtns}>
+			<View style={[styles.headerBtns, intStyles.headerBtns]}>
+				
+				{telaAtual == "inicio" ?
+				<Pressable style={filterActive ? [styles.btnCabecalho, {backgroundColor: "#0880d5"}] : styles.btnCabecalho}
+				onPress={() => {setFilterActive(!filterActive)}}>
+					<Image style={styles.imgCabecalho} source={filterActive ? require('./assets/BtnFilterTopSelectApp.png') : require('./assets/BtnFilterTopApp.png')}/>
+				</Pressable> 
+				:
+				/* Adiciona uma view vazia apenas para manter o layout de antes, quando havia botão */
+				<View style={styles.btnCabecalho}></View>}
+
 				<Pressable style={[styles.btnCabecalho, intStyles.btnAddPost]} onPress={() => {setTelaAtual("criaPost")}}>
 					<Image style={styles.imgCabecalho} source={telaAtual == "criaPost" ? require('./assets/BtnAddTopSelectApp.png') : require('./assets/BtnAddTopApp.png')}/>
-				</Pressable>
-				<Pressable style={styles.btnCabecalho}>
-					<Image style={styles.imgCabecalho} source={require('./assets/BtnFilterTopApp.png')}/>
 				</Pressable>
 				<Pressable style={styles.btnCabecalho}>
 					<Image style={styles.imgCabecalho} source={require('./assets/BtnConfigTopApp.png')}/>
@@ -99,11 +127,16 @@ export default function App() {
 		</View>
 
 
-		<View style={{flex: 1}}>
+		{/* Área central */}
 
-			{telaAtual == "inicio" ? <VerPost ip={ipAddress}/>:<CriaPost ip={ipAddress}/>}
+		<View style={{flex: 1, elevation: 1}}>
+
+			{trocaTela()}
 
 		</View>
+
+
+		{/* Rodapé, com verificação de keyboard ativo para desativá-lo e não reduzir a área central */}
 
 		{!keyboardActive ?
 		<View style={[styles.rodape, intStyles.rodape]}>

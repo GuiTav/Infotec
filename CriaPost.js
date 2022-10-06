@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { StyleSheet, View, TextInput, Text, Pressable, Modal, ScrollView, Image, ToastAndroid} from "react-native";
+import { StyleSheet, View, TextInput, Text, Pressable, Modal, ScrollView, Image, ToastAndroid, ActivityIndicator} from "react-native";
 import RNDateTimePicker from "@react-native-community/datetimepicker";
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -11,6 +11,7 @@ import { Buffer } from 'buffer';
 function CriaPost(props) {
 
     const ipAddress = props.ip;
+    const categorias = props.categ
 
     const[titulo, setTitulo] = useState("");
     const[categVisible, setCategVisible] = useState(false);
@@ -19,10 +20,8 @@ function CriaPost(props) {
     const[calendarVisible, setCalendarVisible] = useState(false);
     const[dataValid, setDataValid] = useState(new Date());
     const[anexos, setAnexos] = useState([]);
+    const[postando, setPostando] = useState(false);
     const idAutor = 1; // Este ID deve vir de fora da tela. Por enquanto ele vai ser só mudado por aqui
-
-    var categorias = ["COMUNICADOS GERAIS", "1ºs ANOS", "2ºs ANOS", "3ºs ANOS", "DESENV. DE SISTEMAS", "ADMINISTRAÇÃO",
-    , "CONTABILIDADE", "CANTINA", "VAGAS DE EMPREGO", "EVENTOS", "VESTIBULARES"];
 
 
 
@@ -65,6 +64,8 @@ function CriaPost(props) {
             return;
         }
 
+        /* Ativa o modal de loading e realiza o post */
+        setPostando(true);
         var request = {tabela: "publicacao", dados: [
             titulo,
             new Date().toISOString().split("T")[0],
@@ -93,14 +94,16 @@ function CriaPost(props) {
         try {
             var result = await fetch("http://" + ipAddress + ":8000", {body: json, method: "POST"});
             var resultJson = await result.json();
-            if (resultJson.erro != "") {
+            if (resultJson.erro != null) {
                 throw resultJson.erro;
             }
         } catch (error) {
-            console.log(error);
+            alert("Não foi possível realizar o envio de sua postagem, verifique sua conexão de internet.");
+            setPostando(false);
             return;
         }
 
+        setPostando(false);
         ToastAndroid.show("Post realizado com sucesso!", ToastAndroid.SHORT);
         return;
     }
@@ -109,6 +112,8 @@ function CriaPost(props) {
     /* ----------------------- ESTILOS INTERATIVOS -------------------- */
 
     const intStyles = StyleSheet.create(
+
+        /* Estilo para quando a categoria está selecionada */
         categoria != "" ? {
             btnCategoria: {
                 borderColor: "#ff3366"
@@ -130,98 +135,129 @@ function CriaPost(props) {
     /* ------------------------ RETURN PRINCIPAL ------------------------ */
 
     return(
-    <ScrollView>
-        <Modal
-            animationType="fade"
-            transparent={true}
-            visible={categVisible}
-            onRequestClose={() => {
-                setCategVisible(false)
-            }}>
-            <Pressable style={styles.modalBackground} onPress={() => {setCategVisible(false)}}>
-                <View style={styles.modalView}>
-                    <ScrollView>
-                        {categorias.map((value, index) => {
-                            return(
-                                <Pressable style={{width: "100%", height: 60, justifyContent: "center"}} key={index}
-                                    onPress={() => {
-                                        setCategoria(value);
-                                        setCategVisible(false);    
-                                    }}>
-                                    <Text style={{fontSize: 20, textAlign: "center"}}>{value}</Text>
-                                </Pressable>
-                            );
-                        })}
-                    </ScrollView>
-                </View>
-            </Pressable>
-        </Modal>
+        <View style={{flex: 1}}>
+            <Text style={styles.titulo}>NOVA POSTAGEM</Text>
+            {/* O keyboardShould... permite que botões sejam clicados mesmo se um textInput está em foco */}
+            <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{paddingBottom: 15}}>
 
 
+                {/* Modal de seleção de categoria */}
 
-        <Text style={styles.titulo}>NOVA POSTAGEM</Text>
-        <View style={styles.geral}>
-            <TextInput style={styles.textbox} placeholder='Título' multiline={true} onChangeText={(text) => {
-                setTitulo(text);
-            }}></TextInput>
+                <Modal animationType="fade" transparent={true} visible={categVisible} onRequestClose={() => {
+                    setCategVisible(false)
+                }}>
+                    <Pressable style={styles.modalBackground} onPress={() => {setCategVisible(false)}}>
+                        <View style={styles.modalView}>
+                            <ScrollView>
+                                {categorias.map((value, index) => {
+                                    return(
+                                        <Pressable style={{width: "100%", height: 60, justifyContent: "center"}} key={index}
+                                            onPress={() => {
+                                                setCategoria(value);
+                                                setCategVisible(false);    
+                                            }}>
+                                            <Text style={{fontSize: 20, textAlign: "center"}}>{value}</Text>
+                                        </Pressable>
+                                    );
+                                })}
+                            </ScrollView>
+                        </View>
+                    </Pressable>
+                </Modal>
 
-            <Pressable
-                style={[styles.btnCategoria, intStyles.btnCategoria]}
-                onPress={() => {setCategVisible(true)}}>
-                <Text style={[styles.txtCategoria, intStyles.txtCategoria]}>
-                    {categoria == "" ? "Selecione uma categoria" : categoria}
-                </Text>
-                <Image source={require("./assets/SetaBaixo.png")} style={[{width: 20, height: 20}, intStyles.setaCateg]}/>
-            </Pressable>
 
-            <TextInput style={[styles.textbox]} multiline={true} placeholder='Mensagem' onChangeText={(text) => {
-                setConteudo(text);
-            }}/>
-            
-            <Pressable style={styles.btnCalendario} onPress={() => {setCalendarVisible(true)}}>
-                <Image source={require("./assets/BtnCalendarioBTApp.png")} style={styles.btnCalendarioImg}/>
-                <View>
-                    <Text style={{fontSize: 15, color: "#ff3366"}}>
-                        Escolha uma data de validade
+                {/* Modal de carregamento, quando o usuário clica em enviar post */}
+                <Modal animationType="slide" transparent={false} visible={postando}>
+                    <View style={{backgroundColor: "white", alignItems: "center", justifyContent: "center", height: "100%"}}>
+                        <ActivityIndicator size={"large"} color={"#190933"}/>
+                    </View>
+                </Modal>
+
+
+            <View style={styles.geral}>
+
+                
+                {/* Caixa de input: Título */}
+
+                <TextInput style={styles.textbox} placeholder='Título' multiline={true} maxLength={255} onChangeText={(text) => {
+                    setTitulo(text);
+                }}></TextInput>
+                <Text style={styles.contador}>{"(" + titulo.length + "/255)"}</Text>
+
+
+                {/* Botão de input: Categoria */}
+
+                <Pressable style={[styles.btnCategoria, intStyles.btnCategoria]} onPress={() => {setCategVisible(true)}}>
+                    <Text style={[styles.txtCategoria, intStyles.txtCategoria]}>
+                        {categoria == "" ? "Selecione uma categoria" : categoria}
                     </Text>
-                    <Text style={{fontSize: 15, color: "#ff3366"}}>
-                        {"Data: " + dataValid.getDate() + "/" + (dataValid.getMonth() + 1) + "/" + dataValid.getFullYear()}
-                    </Text>
-                </View>
-            </Pressable>
-            {calendarVisible ?
-                <RNDateTimePicker
-                    mode="date"
-                    onChange={(event, date) => {setCalendarVisible(false); setDataValid(date)}}
-                    value={dataValid}
-                    minimumDate={new Date()}/>
-                :
-                <></>
-            }
-
-            
-            <View style={styles.anexos}>
-                <Text style={{fontSize: 20, marginBottom: 5}}>Anexos:</Text>
-                {
-                    anexos.map((value, index) => {
-                        return(
-                            <View key={index} style={{flexDirection: "row", marginTop: 5, alignItems: "center", justifyContent: "space-between"}}>
-                                <Text style={{fontSize: 15, maxWidth: "70%"}}>{value.name}</Text>
-                                <Pressable style={{padding: 5}} onPress={() => {excluiArquivo(index)}}><Text style={{fontSize: 15, color: "red"}}>Deletar</Text></Pressable>
-                            </View>
-                        )
-                    })
-                }
-                <Pressable style={styles.btnAddAnexo} onPress={() => {achaArquivo()}}>
-                    <Image source={require("./assets/BtnAddTopApp.png")} style={{height: 25, width: 25, resizeMode: "contain", marginRight: 5}}/>
-                    <Text style={{fontSize: 18}}>Adicionar um anexo</Text>
+                    <Image source={require("./assets/SetaBaixo.png")} style={[{width: 20, height: 20}, intStyles.setaCateg]}/>
                 </Pressable>
+
+
+                {/* Caixa de input: Conteúdo */}
+
+                <TextInput style={[styles.textbox]} multiline={true} placeholder='Mensagem' maxLength={512} onChangeText={(text) => {
+                    setConteudo(text);
+                }}/>
+                <Text style={styles.contador}>{"(" + conteudo.length + "/512)"}</Text>
+                
+
+                {/* Botão de input: Calendario */}
+
+                <Pressable style={styles.btnCalendario} onPress={() => {setCalendarVisible(true)}}>
+                    <Image source={require("./assets/BtnCalendarioBTApp.png")} style={styles.btnCalendarioImg}/>
+                    <View>
+                        <Text style={{fontSize: 15, color: "#ff3366"}}>
+                            Escolha uma data de validade
+                        </Text>
+                        <Text style={{fontSize: 15, color: "#ff3366"}}>
+                            {"Data: " + dataValid.getDate() + "/" + (dataValid.getMonth() + 1) + "/" + dataValid.getFullYear()}
+                        </Text>
+                    </View>
+                </Pressable>
+
+                {/* Exibição do calendario */}
+                {calendarVisible ?
+                    <RNDateTimePicker
+                        mode="date"
+                        onChange={(event, date) => {setCalendarVisible(false); setDataValid(date)}}
+                        value={dataValid}
+                        minimumDate={new Date()}/>
+                    :
+                    <></>
+                }
+
+                
+                {/* Caixa de anexos */}
+
+                <View style={styles.anexos}>
+                    <Text style={{fontSize: 20, marginBottom: 5}}>Anexos:</Text>
+                    {
+                        anexos.map((value, index) => {
+                            return(
+                                <View key={index} style={{flexDirection: "row", marginTop: 5, alignItems: "center", justifyContent: "space-between"}}>
+                                    <Text style={{fontSize: 15, maxWidth: "70%"}}>{value.name}</Text>
+                                    <Pressable style={{padding: 5}} onPress={() => {excluiArquivo(index)}}><Text style={{fontSize: 15, color: "red"}}>Deletar</Text></Pressable>
+                                </View>
+                            )
+                        })
+                    }
+
+                    {/* Botão de adicionar anexo */}
+                    <Pressable style={styles.btnAddAnexo} onPress={() => {achaArquivo()}}>
+                        <Image source={require("./assets/BtnAddTopApp.png")} style={{height: 25, width: 25, resizeMode: "contain", marginRight: 5}}/>
+                        <Text style={{fontSize: 18}}>Adicionar um anexo</Text>
+                    </Pressable>
+                </View>
+
+
+                {/* Botão de envio */}
+
+                <Pressable style={styles.btnEnviar}><Text style={styles.txtBtnEnviar} onPress={() => {enviaPost()}}>Enviar</Text></Pressable>
             </View>
-
-
-            <Pressable style={styles.btnEnviar}><Text style={styles.txtBtnEnviar} onPress={() => {enviaPost()}}>Enviar</Text></Pressable>
-        </View>
-    </ScrollView>
+        </ScrollView>
+    </View>
     );
 }
 
@@ -252,6 +288,12 @@ const styles = StyleSheet.create({
         width: "100%",
         marginTop: 15,
         borderRadius: 20,
+    },
+
+    contador: {
+        paddingRight: 10,
+        width: "100%",
+        textAlign: "right"
     },
 
     btnCategoria: {
