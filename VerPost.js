@@ -1,18 +1,16 @@
 
-import { Pressable, Image, Text, View, StyleSheet, FlatList, ActivityIndicator, ScrollView } from 'react-native';
+import { Pressable, Image, Text, View, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { useState, useEffect } from 'react';
 
 
 function VerPost(props) {
 
 	const ipAddress = props.ip;
-	const filter = props.filter;
-	const categorias = props.categ;
+	const filterCateg = props.categ;
 
 	const[respFetch, setRespFetch] = useState();
 	const[filteredPosts, setFilteredPosts] = useState([]);
 	const[refreshing, setRefreshing] = useState(true);
-	const[filterCateg, setFilterCateg] = useState();
 
 
 	/* ------------------- FUNÇÕES NÃO VISUAIS ---------------- */
@@ -74,123 +72,103 @@ function VerPost(props) {
 
 
 
+
+	/* -------------------- COMPONENTES VISUAIS -------------------- */
+
+	function Post({item}) {
+		return(
+			<View style={{width: "100%", alignItems: "center"}}>
+				<Pressable style={styles.card}>
+					<View style={styles.visualPerfil}>
+						<Image style={styles.fotoPerfil} source={{uri: item["fotoPerfil"]}}/>
+						<Text>{item["nomeUsuario"]}</Text>
+					</View>
+					<View style={styles.conteudo}>
+						<Text style={styles.titulo}>{item["titulo"]}</Text>
+						<Text style={styles.texto}>{item["conteudo"]}</Text>
+					</View>
+					<Arquivos resp={item}/>
+					
+				</Pressable>
+			</View>
+		);
+	}	
+
+
+	function Arquivos(props) {
+		const resp = props.resp;
+	
+		if (resp['idAnexo'] == null) {
+			return;
+		}
+	
+		var idsAnexo = resp['idAnexo'].split(',');
+		var nomesAnexo = resp['nomeArquivo'].split(',');
+	
+		return(
+			idsAnexo.map((element, index) => {
+				return (
+					<View key={index} style={{
+						width: "100%",
+						flexDirection: 'row',
+						alignItems: "center",
+						padding: 10,
+						backgroundColor: "#eee",
+						borderRadius: 15,
+						borderWidth: 1,
+						borderColor: "#ccc",
+						marginTop: 5
+					}}>
+						<Image source={require('./assets/IconArquivo.png')} style={{
+							height: 20,
+							width: 20,
+							marginRight: 5,
+							resizeMode: "contain",
+							tintColor: "#777"
+						}}/>
+						<Text style={{flex: 1, color: "#555", fontSize: 15}}>{nomesAnexo[index]}</Text>
+					</View>
+				)
+			})
+		);
+	}
+
+
 	return (
 		<View style={styles.geral}>
 
 
-			{/* Aba de filtros */}
-
-			{filter ?
-			<View style={{height: 60, position: "absolute", zIndex: 2}}>
-				<ScrollView horizontal={true} style={{backgroundColor: "#0880d5"}} contentContainerStyle={{paddingVertical: 10, paddingHorizontal: 5}}>
-					{categorias.map((value, index) => {
-						return (
-							<Pressable key={index} 
-								style={filterCateg == value ? [styles.filterDiv, {backgroundColor: "#190933"}] : styles.filterDiv}
-								onPress={() => {if (filterCateg == value) {setFilterCateg();} else {setFilterCateg(value)}}}>
-								<Text style={filterCateg == value ? {fontSize: 20, fontWeight: "bold", color: "white"} : {fontSize: 20, fontWeight: "bold"}}>
-									{value}
-								</Text>
-							</Pressable>
-						);
-					})}
-				</ScrollView>
-			</View>
-			:
-			<></>}
-
-
-
 			{/* Posts */}
 
-			{
-				!refreshing ?
-					<FlatList
-						style={{width: "100%"}}
-						contentContainerStyle={{paddingBottom: 10}}
-						data={filterCateg == undefined ? respFetch['resposta'] : filteredPosts}
-						renderItem={Post}
-						keyExtractor={item => item.idPublicacao}
-						ListEmptyComponent={respFetch['erro'] != null ?
-							<Text style={{fontSize: 25, marginTop: 30, paddingHorizontal: "10%", textAlign: "center"}}>
-								{respFetch["erro"]}
-							</Text>
-							:
-							<Text style={{marginTop: 30, fontSize: 20, textAlign: "center"}}>Tão vazio...</Text>
-						}
-						refreshing={refreshing}
-						onRefresh={() => {
-							getPosts();
-						}}
-					/>
-				:
-					<View style={{height: "100%", alignItems: "center", justifyContent: "center"}}>
-						<ActivityIndicator size={'large'} color={"#190933"} />
-					</View>
 
-			}
+			<View style={{width: "100%", flex: 1}}>
+				{
+					!refreshing ?
+						<FlatList
+							style={{width: "100%"}}
+							data={filterCateg == undefined ? respFetch['resposta'] : filteredPosts}
+							renderItem={Post}
+							keyExtractor={item => item.idPublicacao}
+							ListEmptyComponent={respFetch['erro'] != null ?
+								<Text style={{fontSize: 25, marginTop: 30, paddingHorizontal: "10%", textAlign: "center"}}>
+									{respFetch["erro"]}
+								</Text>
+								:
+								<Text style={{marginTop: 30, fontSize: 20, textAlign: "center"}}>Tão vazio...</Text>
+							}
+							refreshing={refreshing}
+							onRefresh={() => {
+								getPosts();
+							}}
+						/>
+					:
+						<View style={{height: "100%", alignItems: "center", justifyContent: "center"}}>
+							<ActivityIndicator size={'large'} color={"#190933"} />
+						</View>
+
+				}
+			</View>
 		</View>
-	);
-}
-
-
-/* -------------------- ELEMENTOS REACT --------------------- */
-
-function Post({item}) {
-	return(
-		<View style={{width: "100%", alignItems: "center"}}>
-			<Pressable style={styles.card}>
-				<View style={styles.visualPerfil}>
-					<Image style={styles.fotoPerfil} source={{uri: item["fotoPerfil"]}}/>
-					<Text>{item["nomeUsuario"]}</Text>
-				</View>
-				<View style={styles.conteudo}>
-					<Text style={styles.titulo}>{item["titulo"]}</Text>
-					<Text style={styles.texto}>{item["conteudo"]}</Text>
-				</View>
-				<Arquivos resp={item}/>
-				
-			</Pressable>
-		</View>
-	);
-}
-
-
-function Arquivos(props) {
-	const resp = props.resp;
-
-	if (resp['idAnexo'] == null) {
-		return;
-	}
-
-	var idsAnexo = resp['idAnexo'].split(',');
-	var nomesAnexo = resp['nomeArquivo'].split(',');
-
-	return(
-		idsAnexo.map((element, index) => {
-			return (
-				<View key={index} style={{
-					width: "100%",
-					flexDirection: 'row',
-					alignItems: "center",
-					padding: 10,
-					backgroundColor: "#eee",
-					borderRadius: 15,
-					borderWidth: 1,
-					borderColor: "#ccc",
-					marginTop: 5
-				}}>
-					<Image source={require('./assets/IconArquivo.png')} style={{
-						height: 20,
-						width: 20,
-						marginRight: 5,
-						resizeMode: "contain",
-						tintColor: "#777"
-					}}/>
-					<Text style={{color: "#555", width: "100%", fontSize: 15}}>{nomesAnexo[index]}</Text>
-				</View>
-			)
-		})
 	);
 }
 
@@ -200,7 +178,7 @@ function Arquivos(props) {
 
 const styles = StyleSheet.create({
 	geral:{
-		width: "100%",
+		flex: 1,
 		alignItems: "center"
 	},
 

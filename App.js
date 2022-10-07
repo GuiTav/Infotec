@@ -1,19 +1,20 @@
 
 import { useState, useEffect } from 'react';
-import { StyleSheet, View,Image, StatusBar, Pressable, Keyboard, SafeAreaView, } from 'react-native';
+import { StyleSheet, View,Image, StatusBar, Pressable, Keyboard, SafeAreaView, ScrollView, Text } from 'react-native';
 import VerPost from './VerPost';
 import CriaPost from './CriaPost';
 
 
 export default function App() {
 
-	const ipAddress = '192.168.0.7' /* Defina o ip da máquina host quando for testar */
+	const ipAddress = '' /* Defina o ip da máquina host quando for testar */
 	const categorias = ["COMUNICADOS GERAIS", "1ºs ANOS", "2ºs ANOS", "3ºs ANOS", "DESENV. DE SISTEMAS",
 	"ADMINISTRAÇÃO", "CONTABILIDADE", "CANTINA", "VAGAS DE EMPREGO", "EVENTOS", "VESTIBULARES"];
 
 	const [telaAtual, setTelaAtual] = useState("inicio");
 	const [keyboardActive, setKeyboardActive] = useState(false);
 	const [filterActive, setFilterActive] = useState(false);
+	const [filterCateg, setFilterCateg] = useState();
 
 
 	/* -------------- FUNÇÕES NÃO VISUAIS -------------- */
@@ -21,7 +22,7 @@ export default function App() {
 	function trocaTela() {
 		switch (telaAtual) {
 			case "inicio":
-				return <VerPost ip={ipAddress} filter={filterActive} categ={categorias}/>
+				return <VerPost ip={ipAddress} categ={filterCateg}/>
 			
 			case "criaPost":
 				return <CriaPost ip={ipAddress} categ={categorias}/>
@@ -31,7 +32,12 @@ export default function App() {
 		}
 	}
 
-	
+
+	useEffect(() => {
+		setFilterActive(false);
+		setFilterCateg();
+	}, [telaAtual]);
+
 	useEffect(() => {
 		Keyboard.addListener('keyboardDidShow', () => {
 			setKeyboardActive(true);
@@ -127,9 +133,32 @@ export default function App() {
 		</View>
 
 
+		{/* Aba de filtros */}
+
+		{filterActive ?
+		<View style={{height: 60}}>
+			<ScrollView horizontal={true} style={{backgroundColor: "#0880d5"}} contentContainerStyle={{paddingVertical: 10, paddingHorizontal: 5}}>
+				{categorias.map((value, index) => {
+					return (
+						<Pressable key={index} 
+							style={filterCateg == value ? [styles.filterDiv, {backgroundColor: "#190933"}] : styles.filterDiv}
+							onPress={() => {if (filterCateg == value) {setFilterCateg();} else {setFilterCateg(value)}}}>
+							<Text style={filterCateg == value ? {fontSize: 20, fontWeight: "bold", color: "white"} : {fontSize: 20, fontWeight: "bold"}}>
+								{value}
+							</Text>
+						</Pressable>
+					);
+				})}
+			</ScrollView>
+		</View>
+		:
+		<></>}
+
+
+
 		{/* Área central */}
 
-		<View style={{flex: 1, elevation: 1}}>
+		<View style={{flex: 1}}>
 
 			{trocaTela()}
 
@@ -151,7 +180,7 @@ export default function App() {
 			</Pressable>
 		</View> : <View/>}
 
-		<StatusBar backgroundColor="transparent"></StatusBar>
+		<StatusBar backgroundColor="transparent" barStyle={"dark-content"}></StatusBar>
     </SafeAreaView>
     
   	);
@@ -206,6 +235,16 @@ const styles = StyleSheet.create({
 		height: "80%",
 		width: "80%",
 		resizeMode: "contain"
+	},
+
+	filterDiv: {
+		marginHorizontal: 5,
+		height: "100%",
+		paddingHorizontal: 10,
+		justifyContent: "center",
+		backgroundColor: "rgba(255, 255, 255, 0.9)",
+		borderWidth: 2,
+		borderColor: "#190933"
 	},
 
 

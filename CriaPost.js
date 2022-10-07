@@ -11,7 +11,7 @@ import { Buffer } from 'buffer';
 function CriaPost(props) {
 
     const ipAddress = props.ip;
-    const categorias = props.categ
+    const categorias = props.categ;
 
     const[titulo, setTitulo] = useState("");
     const[categVisible, setCategVisible] = useState(false);
@@ -92,7 +92,9 @@ function CriaPost(props) {
 
         var json = JSON.stringify(request);
         try {
-            var result = await fetch("http://" + ipAddress + ":8000", {body: json, method: "POST"});
+            const controller = new AbortController();
+			setTimeout(() => {controller.abort()}, 15000)
+            var result = await fetch("http://" + ipAddress + ":8000", {body: json, method: "POST", signal: controller.signal});
             var resultJson = await result.json();
             if (resultJson.erro != null) {
                 throw resultJson.erro;
