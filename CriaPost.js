@@ -1,6 +1,7 @@
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { StyleSheet, View, TextInput, Text, Pressable, Modal, ScrollView, Image, ToastAndroid, ActivityIndicator} from "react-native";
+import { Contexto } from "./Globais";
 import RNDateTimePicker from "@react-native-community/datetimepicker";
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -10,8 +11,8 @@ import { Buffer } from 'buffer';
 
 function CriaPost(props) {
 
-    const ipAddress = props.ip;
-    const categorias = props.categ;
+    const ipAddress = React.useContext(Contexto).ipAddress;
+    const categorias = React.useContext(Contexto).categorias;
 
     const[titulo, setTitulo] = useState("");
     const[categVisible, setCategVisible] = useState(false);
@@ -22,7 +23,17 @@ function CriaPost(props) {
     const[anexos, setAnexos] = useState([]);
     const[postando, setPostando] = useState(false);
     const idAutor = 1; // Este ID deve vir de fora da tela. Por enquanto ele vai ser só mudado por aqui
+    
+    
 
+    /* ------------ PARA O MODO DE EDIÇÃO ------------ */
+    
+    const post = props.post;
+    
+    // Serve para quando o usuário deleta um anexo que já estava presente no post, no modo de edição.
+    // O id do anexo vem para cá para ser deletado depois
+    const[anexosDeletados, setAnexosDeletados] = useState([]);
+    
 
 
     /* ------------------------ FUNÇÕES NÃO VISUAIS ---------------------- */
@@ -31,6 +42,41 @@ function CriaPost(props) {
         /* Apenas limpando o cache antes de executar qualquer coisa */
         FileSystem.deleteAsync(FileSystem.cacheDirectory + "DocumentPicker", {idempotent: true});
     }, []);
+
+
+
+    /* ---------- PARA O MODO DE EDIÇÃO ---------- */
+
+    // Atribui os valores nos seus respectivos hooks, ou elimina todos os valores dos hooks
+    // (a limpeza de hooks ocorre pois quando o usuário passa do modo edição para o de criação diretamente,
+    // o próprio react não limpa os hooks de dentro dele, então continuaria exibindo os valores de edição)
+    useEffect(() => {
+        if (post != undefined) {
+            setTitulo(post.titulo);
+            setCategoria(post.categoria);
+            setConteudo(post.conteudo);
+            setDataValid(new Date(post.validade));
+            
+            if (post['idAnexo'] == null) {
+                return;
+            }
+        
+            var idsAnexo = post['idAnexo'].split(',');
+            var nomesAnexo = post['nomeArquivo'].split(',');
+
+            var juncao = idsAnexo.map((value, index) => {
+                return {id: idsAnexo[index], name: nomesAnexo[index]};
+            });
+
+            setAnexos(juncao);
+        } else {
+            setTitulo("");
+            setCategoria("");
+            setConteudo("");
+            setDataValid(new Date());
+            setAnexos([]);
+        }
+    }, [post])
 
 
     async function achaArquivo() {
@@ -50,7 +96,11 @@ function CriaPost(props) {
 
     async function excluiArquivo(id) {
         var arquivo = anexos[id];
-        await FileSystem.deleteAsync(arquivo.uri);
+        if (arquivo.id == undefined) {
+            await FileSystem.deleteAsync(arquivo.uri);
+        } else {
+            setAnexosDeletados([...anexosDeletados, arquivo.id]);
+        }
         var novoArray = anexos;
         novoArray.splice(id, 1);
         setAnexos([...novoArray]);
@@ -77,24 +127,20 @@ function CriaPost(props) {
         ]};
 
         if (anexos.length != 0) {
-
-            var blobs = [];
+            request["anexo"] = [];
             for (let i = 0; i < anexos.length; i++) {
                 var elemento = anexos[i];
                 var arquivo = await FileSystem.readAsStringAsync(elemento.uri, {encoding: "base64"});
-                blobs = [...blobs, "0x" + Buffer.from(arquivo, "base64").toString("hex")];
+                request["anexo"].push(["0x" + Buffer.from(arquivo, "base64").toString("hex"), anexos[i].name]);
+                
             }
-
-            request["anexo"] = anexos.map((value, index) => {
-                return ([blobs[index], value.name]);
-            })
         }
 
-        var json = JSON.stringify(request);
+        var request = JSON.stringify(request);
         try {
             const controller = new AbortController();
 			setTimeout(() => {controller.abort()}, 15000)
-            var result = await fetch("http://" + ipAddress + ":8000", {body: json, method: "POST", signal: controller.signal});
+            var result = await fetch("http://" + ipAddress + ":8000", {body: request, method: "POST", signal: controller.signal});
             var resultJson = await result.json();
             if (resultJson.erro != null) {
                 throw resultJson.erro;
@@ -107,6 +153,103 @@ function CriaPost(props) {
 
         setPostando(false);
         ToastAndroid.show("Post realizado com sucesso!", ToastAndroid.SHORT);
+        return;
+    }
+
+
+
+    async function editaPost() {
+        if (titulo == "" || categoria == "" || conteudo == "") {
+            ToastAndroid.show("Os campos 'título', 'categoria' e 'conteudo' são obrigatórios.", ToastAndroid.SHORT);
+            return;
+        }
+
+        /* Ativa o modal de loading e realiza a alteração */
+        setPostando(true);
+        
+
+        /* ALTERAÇÃO NO POST */
+        var request = {
+        tabela: "publicacao",
+        dados: {
+            "titulo": titulo,
+            "dataEdicao": new Date().toISOString().split("T")[0],
+            "categoria": categoria,
+            "validade": dataValid.toISOString().split("T")[0],
+            "conteudo": conteudo,
+            "idAutor": idAutor
+            },
+        id: post.idPublicacao};
+        request = JSON.stringify(request);
+        
+        
+        /* ALTERAÇÃO NOS ANEXOS */
+        var anexosAdicionados = [];
+        anexos.map((value) => {
+            if (value.id == undefined) {
+                anexosAdicionados.push(value);
+            }
+        });
+
+        var requestAnexo = null;
+        if (anexosAdicionados.length != 0) {
+            requestAnexo = {tabela: "anexo", dados: []};
+            for (let i = 0; i < anexosAdicionados.length; i++) {
+                var elemento = anexosAdicionados[i];
+                var arquivo = await FileSystem.readAsStringAsync(elemento.uri, {encoding: "base64"});
+                requestAnexo["dados"].push(["0x" + Buffer.from(arquivo, "base64").toString("hex"), anexosAdicionados[i].name, post.idPublicacao]);
+            }
+            requestAnexo = JSON.stringify(requestAnexo);
+        }
+
+
+        try {
+            const controller = new AbortController();
+			var timeoutMain = setTimeout(() => {controller.abort()}, 15000)
+            var result = await fetch("http://" + ipAddress + ":8000", {body: request, method: "PUT", signal: controller.signal});
+            clearTimeout(timeoutMain);
+            var resultJson = await result.json();
+            if (resultJson.erro != null) {
+                throw resultJson.erro;
+            }
+
+            if (anexosDeletados.length > 0) {
+                const controllerDel = new AbortController();
+                var timeoutDel = setTimeout(() => {controllerDel.abort()}, 15000);
+                var urlDelete = "";
+                anexosDeletados.map((value, index) => {
+                    if (index != 0) {
+                        urlDelete += '-';
+                    }
+                    urlDelete += value;
+                });
+                var resultDel = await fetch("http://" + ipAddress + ":8000/anexo/" + urlDelete, {method: "DELETE", signal: controllerDel.signal});
+                clearTimeout(timeoutDel);
+                var resultDelJson = await resultDel.json();
+                if (resultDelJson.erro != null) {
+                    throw resultDelJson.erro;
+                }
+            }
+
+            if (requestAnexo != null) {
+                const controllerAdd = new AbortController();
+                var timeoutAdd = setTimeout(() => {controllerAdd.abort()}, 15000);
+                var resultAdd = await fetch("http://" + ipAddress + ":8000", {body: requestAnexo, method: "POST", signal: controllerAdd.signal});
+                clearTimeout(timeoutAdd);
+                var resultAddJson = await resultAdd.json();
+                if (resultAddJson.erro != null) {
+                    throw resultAddJson.erro;
+                }
+            }
+
+        } catch (error) {
+            alert("Não foi possível realizar a alteração de sua postagem, verifique sua conexão de internet.");
+            setPostando(false);
+            return;
+        }
+
+        setPostando(false);
+        ToastAndroid.show("Post alterado com sucesso!", ToastAndroid.SHORT);
         return;
     }
 
@@ -138,7 +281,7 @@ function CriaPost(props) {
 
     return(
         <View style={{flex: 1}}>
-            <Text style={styles.titulo}>NOVA POSTAGEM</Text>
+            <Text style={styles.titulo}>{post == undefined ? "NOVA POSTAGEM" : "EDITAR POST"}</Text>
             {/* O keyboardShould... permite que botões sejam clicados mesmo se um textInput está em foco */}
             <ScrollView keyboardShouldPersistTaps="always" contentContainerStyle={{paddingBottom: 15}}>
 
@@ -183,7 +326,7 @@ function CriaPost(props) {
 
                 <TextInput style={styles.textbox} placeholder='Título' multiline={true} maxLength={255} onChangeText={(text) => {
                     setTitulo(text);
-                }}></TextInput>
+                }}>{titulo}</TextInput>
                 <Text style={styles.contador}>{"(" + titulo.length + "/255)"}</Text>
 
 
@@ -201,7 +344,7 @@ function CriaPost(props) {
 
                 <TextInput style={[styles.textbox]} multiline={true} placeholder='Mensagem' maxLength={512} onChangeText={(text) => {
                     setConteudo(text);
-                }}/>
+                }}>{conteudo}</TextInput>
                 <Text style={styles.contador}>{"(" + conteudo.length + "/512)"}</Text>
                 
 
@@ -254,9 +397,12 @@ function CriaPost(props) {
                 </View>
 
 
-                {/* Botão de envio */}
-
-                <Pressable style={styles.btnEnviar}><Text style={styles.txtBtnEnviar} onPress={() => {enviaPost()}}>Enviar</Text></Pressable>
+                {/* Botão de envio ou edição*/}
+                <Pressable style={styles.btnEnviar}>
+                    <Text style={styles.txtBtnEnviar} onPress={() => {post == undefined ? enviaPost() : editaPost()}}>
+                        {post == undefined ? "Enviar" : "Editar"}
+                    </Text>
+                </Pressable>
             </View>
         </ScrollView>
     </View>

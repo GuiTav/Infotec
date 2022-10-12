@@ -1,11 +1,13 @@
 
 import { Pressable, Image, Text, View, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { Contexto, Telas } from './Globais';
 
 
 function VerPost(props) {
 
-	const ipAddress = props.ip;
+	const ipAddress = React.useContext(Contexto).ipAddress;
+	const trocaTela = useContext(Telas)
 	const filterCateg = props.categ;
 
 	const[respFetch, setRespFetch] = useState();
@@ -71,14 +73,12 @@ function VerPost(props) {
 	}, [filterCateg]);
 
 
-
-
 	/* -------------------- COMPONENTES VISUAIS -------------------- */
 
 	function Post({item}) {
 		return(
 			<View style={{width: "100%", alignItems: "center"}}>
-				<Pressable style={styles.card}>
+				<Pressable style={styles.card} onPress={() => {trocaTela("editPost", item)}}>
 					<View style={styles.visualPerfil}>
 						<Image style={styles.fotoPerfil} source={{uri: item["fotoPerfil"]}}/>
 						<Text>{item["nomeUsuario"]}</Text>
@@ -135,39 +135,30 @@ function VerPost(props) {
 
 
 	return (
-		<View style={styles.geral}>
-
-
-			{/* Posts */}
-
-
-			<View style={{width: "100%", flex: 1}}>
-				{
-					!refreshing ?
-						<FlatList
-							style={{width: "100%"}}
-							data={filterCateg == undefined ? respFetch['resposta'] : filteredPosts}
-							renderItem={Post}
-							keyExtractor={item => item.idPublicacao}
-							ListEmptyComponent={respFetch['erro'] != null ?
-								<Text style={{fontSize: 25, marginTop: 30, paddingHorizontal: "10%", textAlign: "center"}}>
-									{respFetch["erro"]}
-								</Text>
-								:
-								<Text style={{marginTop: 30, fontSize: 20, textAlign: "center"}}>Tão vazio...</Text>
-							}
-							refreshing={refreshing}
-							onRefresh={() => {
-								getPosts();
-							}}
-						/>
-					:
-						<View style={{height: "100%", alignItems: "center", justifyContent: "center"}}>
-							<ActivityIndicator size={'large'} color={"#190933"} />
-						</View>
-
-				}
-			</View>
+		<View style={{width: "100%", flex: 1}}>
+			{!refreshing ?
+					<FlatList
+						style={{width: "100%"}}
+						data={filterCateg == undefined ? respFetch['resposta'] : filteredPosts}
+						renderItem={Post}
+						keyExtractor={item => item.idPublicacao}
+						ListEmptyComponent={respFetch['erro'] != null ?
+							<Text style={{fontSize: 25, marginTop: 30, paddingHorizontal: "10%", textAlign: "center"}}>
+								{respFetch["erro"]}
+							</Text>
+							:
+							<Text style={{marginTop: 30, fontSize: 20, textAlign: "center"}}>Tão vazio...</Text>
+						}
+						refreshing={refreshing}
+						onRefresh={() => {
+							getPosts();
+						}}
+					/>
+				:
+					<View style={{height: "100%", alignItems: "center", justifyContent: "center"}}>
+						<ActivityIndicator size={'large'} color={"#190933"} />
+					</View>
+			}
 		</View>
 	);
 }
@@ -177,11 +168,6 @@ function VerPost(props) {
 /* --------------------- ESTILOS GERAIS --------------------- */
 
 const styles = StyleSheet.create({
-	geral:{
-		flex: 1,
-		alignItems: "center"
-	},
-
 	filterDiv: {
 		marginHorizontal: 5,
 		height: "100%",

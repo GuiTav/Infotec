@@ -1,17 +1,18 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { StyleSheet, View,Image, StatusBar, Pressable, Keyboard, SafeAreaView, ScrollView, Text } from 'react-native';
+import { Telas, Contexto } from './Globais';
 import VerPost from './VerPost';
 import CriaPost from './CriaPost';
 
 
-export default function App() {
 
-	const ipAddress = '' /* Defina o ip da máquina host quando for testar */
-	const categorias = ["COMUNICADOS GERAIS", "1ºs ANOS", "2ºs ANOS", "3ºs ANOS", "DESENV. DE SISTEMAS",
-	"ADMINISTRAÇÃO", "CONTABILIDADE", "CANTINA", "VAGAS DE EMPREGO", "EVENTOS", "VESTIBULARES"];
+export default function App() {
+	const categorias = useContext(Contexto).categorias;
 
 	const [telaAtual, setTelaAtual] = useState("inicio");
+	const [postAtual, setPostAtual] = useState();
+
 	const [keyboardActive, setKeyboardActive] = useState(false);
 	const [filterActive, setFilterActive] = useState(false);
 	const [filterCateg, setFilterCateg] = useState();
@@ -19,17 +20,25 @@ export default function App() {
 
 	/* -------------- FUNÇÕES NÃO VISUAIS -------------- */
 
-	function trocaTela() {
+	function abreTela() {
 		switch (telaAtual) {
 			case "inicio":
-				return <VerPost ip={ipAddress} categ={filterCateg}/>
+				return <VerPost categ={filterCateg}/>
 			
 			case "criaPost":
-				return <CriaPost ip={ipAddress} categ={categorias}/>
+				return <CriaPost />
+
+			case "editPost":
+				return <CriaPost post={postAtual} />
 		
 			default:
 				return <></>;
 		}
+	}
+
+	function trocaTela(tela, post = null) {
+		setTelaAtual(tela);
+		setPostAtual(post);
 	}
 
 
@@ -108,7 +117,7 @@ export default function App() {
 		{/* Cabecalho */}
 
 		<View style={styles.cabecalho}>
-			<Pressable style={styles.btnLogo} onPress={() => {setTelaAtual("inicio")}}>
+			<Pressable style={styles.btnLogo} onPress={() => {trocaTela("inicio")}}>
 				<Image style={styles.logo} source={require('./assets/IconeInfotecTopApp.png')}/>
 			</Pressable>
 
@@ -123,7 +132,7 @@ export default function App() {
 				/* Adiciona uma view vazia apenas para manter o layout de antes, quando havia botão */
 				<View style={styles.btnCabecalho}></View>}
 
-				<Pressable style={[styles.btnCabecalho, intStyles.btnAddPost]} onPress={() => {setTelaAtual("criaPost")}}>
+				<Pressable style={[styles.btnCabecalho, intStyles.btnAddPost]} onPress={() => {trocaTela("criaPost")}}>
 					<Image style={styles.imgCabecalho} source={telaAtual == "criaPost" ? require('./assets/BtnAddTopSelectApp.png') : require('./assets/BtnAddTopApp.png')}/>
 				</Pressable>
 				<Pressable style={styles.btnCabecalho}>
@@ -160,7 +169,9 @@ export default function App() {
 
 		<View style={{flex: 1}}>
 
-			{trocaTela()}
+			<Telas.Provider value={trocaTela}>
+				{abreTela()}
+			</Telas.Provider>
 
 		</View>
 
@@ -169,13 +180,13 @@ export default function App() {
 
 		{!keyboardActive ?
 		<View style={[styles.rodape, intStyles.rodape]}>
-			<Pressable style={[styles.btnRodape, intStyles.btnInicio]} onPress={() => {setTelaAtual("inicio")}}>
+			<Pressable style={[styles.btnRodape, intStyles.btnInicio]} onPress={() => {trocaTela("inicio")}}>
 				<Image style={styles.imgRodape} source={telaAtual == 'inicio' ? require('./assets/BtnInicioSelectBTApp.png') : require('./assets/BtnInicioBTApp.png')}></Image>
 			</Pressable>
-			<Pressable style={[styles.btnRodape, intStyles.btnCalendario]} onPress={() => {setTelaAtual("calendario")}}>
+			<Pressable style={[styles.btnRodape, intStyles.btnCalendario]} onPress={() => {trocaTela("calendario")}}>
 				<Image style={styles.imgRodape} source={telaAtual == 'calendario' ? require('./assets/BtnCalendarioSelectBTApp.png') : require('./assets/BtnCalendarioBTApp.png')}></Image>
 			</Pressable>
-			<Pressable style={[styles.btnRodape, intStyles.btnHorarios]} onPress={() => {setTelaAtual("horario")}}>
+			<Pressable style={[styles.btnRodape, intStyles.btnHorarios]} onPress={() => {trocaTela("horario")}}>
 				<Image style={styles.imgRodape} source={telaAtual == 'horario' ? require('./assets/BtnHorarioSelectBTApp.png') : require('./assets/BtnHorarioBTApp.png')}></Image>
 			</Pressable>
 		</View> : <View/>}
