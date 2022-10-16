@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect, useContext } from 'react';
-import { StyleSheet, View,Image, StatusBar, Pressable, Keyboard, SafeAreaView, ScrollView, Text } from 'react-native';
+import { StyleSheet, View,Image, StatusBar, Pressable, Keyboard, SafeAreaView, ScrollView, Text, BackHandler } from 'react-native';
 import { Telas, Contexto } from './Globais';
 import VerPost from './VerPost';
 import CriaPost from './CriaPost';
+import ExpandePost from './ExpandePost';
 
 
 
@@ -30,6 +31,9 @@ export default function App() {
 
 			case "editPost":
 				return <CriaPost post={postAtual} />
+
+			case "expandePost":
+				return <ExpandePost post={postAtual} />
 		
 			default:
 				return <></>;

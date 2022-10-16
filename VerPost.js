@@ -7,7 +7,7 @@ import { Contexto, Telas } from './Globais';
 function VerPost(props) {
 
 	const ipAddress = React.useContext(Contexto).ipAddress;
-	const trocaTela = useContext(Telas)
+	const trocaTela = useContext(Telas);
 	const filterCateg = props.categ;
 
 	const[respFetch, setRespFetch] = useState();
@@ -19,11 +19,10 @@ function VerPost(props) {
 
 	async function getPosts() {
 		setRefreshing(true);
-		var respCrua;
 		try {
 			const controller = new AbortController();
 			setTimeout(() => {controller.abort()}, 10000)
-			respCrua = await fetch("http://" + ipAddress + ":8000/publiCompleta", {signal: controller.signal});
+			var respCrua = await fetch("http://" + ipAddress + ":8000/publiCompleta", {signal: controller.signal});
 			var resposta = await respCrua.json();
 			/* Ordena os posts do maior idPublicacao para o menor */
 			resposta['resposta'].sort((a, b) => {
@@ -47,7 +46,7 @@ function VerPost(props) {
 
 
 	function filterPosts() {
-		if (respFetch == undefined) {
+		if (respFetch == undefined || respFetch["erro"] != null) {
 			return;
 		}
 
@@ -78,7 +77,7 @@ function VerPost(props) {
 	function Post({item}) {
 		return(
 			<View style={{width: "100%", alignItems: "center"}}>
-				<Pressable style={styles.card} onPress={() => {trocaTela("editPost", item)}}>
+				<Pressable style={styles.card} onPress={() => {trocaTela("expandePost", item)}}>
 					<View style={styles.visualPerfil}>
 						<Image style={styles.fotoPerfil} source={{uri: item["fotoPerfil"]}}/>
 						<Text>{item["nomeUsuario"]}</Text>

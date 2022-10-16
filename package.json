@@ -16,9 +16,7 @@
     "expo-module-scripts": "^2.1.1",
     "expo-status-bar": "~1.4.0",
     "react": "18.0.0",
-    "react-native": "0.69.5",
-    "react-native-shadow": "^1.2.2",
-    "react-native-svg": "12.3.0"
+    "react-native": "0.69.5"
   },
   "devDependencies": {
     "@babel/core": "^7.12.9"

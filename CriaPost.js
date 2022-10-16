@@ -139,7 +139,7 @@ function CriaPost(props) {
         var request = JSON.stringify(request);
         try {
             const controller = new AbortController();
-			setTimeout(() => {controller.abort()}, 15000)
+			setTimeout(() => {controller.abort()}, 30000)
             var result = await fetch("http://" + ipAddress + ":8000", {body: request, method: "POST", signal: controller.signal});
             var resultJson = await result.json();
             if (resultJson.erro != null) {
@@ -205,7 +205,7 @@ function CriaPost(props) {
 
         try {
             const controller = new AbortController();
-			var timeoutMain = setTimeout(() => {controller.abort()}, 15000)
+			var timeoutMain = setTimeout(() => {controller.abort()}, 30000)
             var result = await fetch("http://" + ipAddress + ":8000", {body: request, method: "PUT", signal: controller.signal});
             clearTimeout(timeoutMain);
             var resultJson = await result.json();
