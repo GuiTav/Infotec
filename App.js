@@ -13,6 +13,8 @@ export default function App() {
 
 	const [telaAtual, setTelaAtual] = useState("inicio");
 	const [postAtual, setPostAtual] = useState();
+	const [stackTela, setStackTela] = useState([]);
+	const [stackPosts, setStackPosts] = useState([]);
 
 	const [keyboardActive, setKeyboardActive] = useState(false);
 	const [filterActive, setFilterActive] = useState(false);
@@ -41,9 +43,54 @@ export default function App() {
 	}
 
 	function trocaTela(tela, post = null) {
+		if (tela == telaAtual) {
+			return;
+		}
+
+		var arrTela = stackTela;
+		var arrPost = stackPosts;
+
+		if (arrTela.length == 3) {
+			arrTela.shift()
+		}
+
+		if (arrPost.length == 3) {
+			arrPost.shift()
+		}
+
+		arrTela.push(tela);
+		arrPost.push(post);
+
+		setStackTela(arrTela);
+		setStackPosts(arrPost);
 		setTelaAtual(tela);
 		setPostAtual(post);
+		return;
 	}
+
+
+
+	BackHandler.addEventListener('hardwareBackPress', () => {
+		var arrTela = stackTela;
+		var arrPost = stackPosts;
+
+		if (arrTela.length == 0) {
+			BackHandler.exitApp();
+		}
+
+		arrTela.pop();
+		arrPost.pop();
+
+		if (arrTela.length == 0) {
+			setTelaAtual("inicio");
+			return true;
+		}
+
+		// O post precisa vir primeiro, pois ele precisa ja estar setado quando a tela trocar
+		setPostAtual(arrPost[arrPost.length - 1]);
+		setTelaAtual(arrTela[arrTela.length - 1]);
+		return true;
+	});
 
 
 	useEffect(() => {
