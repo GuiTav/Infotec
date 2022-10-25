@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { StyleSheet, View, TextInput, Text, Pressable, Modal, ScrollView, Image, ToastAndroid, ActivityIndicator} from "react-native";
-import { Contexto } from "./Globais";
+import { Contexto, Ip } from "./Globais";
 import RNDateTimePicker from "@react-native-community/datetimepicker";
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -9,10 +9,10 @@ import { Buffer } from 'buffer';
 
 
 
-function CriaPost(props) {
+export default function CriaPost(props) {
 
-    const ipAddress = React.useContext(Contexto).ipAddress;
-    const categorias = React.useContext(Contexto).categorias;
+    const { ipAddress } = useContext(Ip);
+    const categorias = useContext(Contexto).categorias;
 
     const[titulo, setTitulo] = useState("");
     const[categVisible, setCategVisible] = useState(false);
@@ -531,5 +531,3 @@ const styles = StyleSheet.create({
     }
 });
 
-
-export default CriaPost;

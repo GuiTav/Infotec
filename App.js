@@ -1,18 +1,20 @@
 
-import React, { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { StyleSheet, View,Image, StatusBar, Pressable, Keyboard, SafeAreaView, ScrollView, Text, BackHandler } from 'react-native';
-import { Telas, Contexto } from './Globais';
+import { Contexto, WrapperContext } from './Globais';
 import VerPost from './VerPost';
 import CriaPost from './CriaPost';
 import ExpandePost from './ExpandePost';
+import Config from './Config';
 
 
 
 export default function App() {
 	const categorias = useContext(Contexto).categorias;
 
-	const [telaAtual, setTelaAtual] = useState("inicio");
-	const [postAtual, setPostAtual] = useState();
+	const [ip, setIp] = useState("192.168.0.6");
+
+	const [telaAtual, setTelaAtual] = useState({tela: "inicio", post: null});
 	const [stackTela, setStackTela] = useState([]);
 	const [stackPosts, setStackPosts] = useState([]);
 
@@ -24,7 +26,7 @@ export default function App() {
 	/* -------------- FUNÇÕES NÃO VISUAIS -------------- */
 
 	function abreTela() {
-		switch (telaAtual) {
+		switch (telaAtual.tela) {
 			case "inicio":
 				return <VerPost categ={filterCateg}/>
 			
@@ -32,10 +34,13 @@ export default function App() {
 				return <CriaPost />
 
 			case "editPost":
-				return <CriaPost post={postAtual} />
+				return <CriaPost post={telaAtual.post} />
 
 			case "expandePost":
-				return <ExpandePost post={postAtual} />
+				return <ExpandePost post={telaAtual.post} />
+
+			case "config":
+				return <Config />
 		
 			default:
 				return <></>;
@@ -43,7 +48,7 @@ export default function App() {
 	}
 
 	function trocaTela(tela, post = null) {
-		if (tela == telaAtual) {
+		if (tela == telaAtual.tela) {
 			return;
 		}
 
@@ -63,8 +68,7 @@ export default function App() {
 
 		setStackTela(arrTela);
 		setStackPosts(arrPost);
-		setTelaAtual(tela);
-		setPostAtual(post);
+		setTelaAtual({tela: tela, post: post});
 		return;
 	}
 
@@ -79,16 +83,15 @@ export default function App() {
 		}
 
 		arrTela.pop();
-		arrPost.pop();
+		var postExcluido = arrPost.pop();
 
 		if (arrTela.length == 0) {
-			setTelaAtual("inicio");
+			setTelaAtual({tela: "inicio", post: null});
 			return true;
 		}
 
 		// O post precisa vir primeiro, pois ele precisa ja estar setado quando a tela trocar
-		setPostAtual(arrPost[arrPost.length - 1]);
-		setTelaAtual(arrTela[arrTela.length - 1]);
+		setTelaAtual({tela: arrTela[arrTela.length - 1], post: arrPost[arrPost.length - 1]});
 		return true;
 	});
 
@@ -96,6 +99,10 @@ export default function App() {
 	useEffect(() => {
 		setFilterActive(false);
 		setFilterCateg();
+/* 		console.log(stackPosts);
+		console.log(" ");
+		console.log(stackTela);
+		console.log("=========================================================="); */
 	}, [telaAtual]);
 
 	useEffect(() => {
@@ -112,7 +119,7 @@ export default function App() {
 	/* --------------- Estilos interativos -------------- */
 
 
-	const intStyles = StyleSheet.create(telaAtual == 'inicio' ? {
+	const intStyles = StyleSheet.create(telaAtual.tela == 'inicio' ? {
 		rodape: {
 			backgroundColor: "#0880d5",
 		},
@@ -125,7 +132,7 @@ export default function App() {
 			borderTopLeftRadius: 15
 		}
 
-	} : telaAtual == 'calendario' ? {
+	} : telaAtual.tela == 'calendario' ? {
 		rodape: {
 			backgroundColor: '#ff3366'
 		},
@@ -142,7 +149,7 @@ export default function App() {
 			borderTopLeftRadius: 15
 		}
 
-	} : telaAtual == 'horario' ? {
+	} : telaAtual.tela == 'horario' ? {
 		rodape: {
 			backgroundColor: '#2ec4b6'
 		},
@@ -154,9 +161,13 @@ export default function App() {
 		btnCalendario: {
 			borderTopRightRadius: 15
 		}
-	} : telaAtual == 'criaPost' ? {
+	} : telaAtual.tela == 'criaPost' ? {
 		btnAddPost: {
 			backgroundColor: '#ff3366'
+		}
+	} : telaAtual.tela == "config" ? {
+		btnConfig: {
+			backgroundColor: '#190933'
 		}
 	} : {});
 
@@ -174,7 +185,7 @@ export default function App() {
 
 			<View style={[styles.headerBtns, intStyles.headerBtns]}>
 				
-				{telaAtual == "inicio" ?
+				{telaAtual.tela == "inicio" ?
 				<Pressable style={filterActive ? [styles.btnCabecalho, {backgroundColor: "#0880d5"}] : styles.btnCabecalho}
 				onPress={() => {setFilterActive(!filterActive)}}>
 					<Image style={styles.imgCabecalho} source={filterActive ? require('./assets/BtnFilterTopSelectApp.png') : require('./assets/BtnFilterTopApp.png')}/>
@@ -184,10 +195,10 @@ export default function App() {
 				<View style={styles.btnCabecalho}></View>}
 
 				<Pressable style={[styles.btnCabecalho, intStyles.btnAddPost]} onPress={() => {trocaTela("criaPost")}}>
-					<Image style={styles.imgCabecalho} source={telaAtual == "criaPost" ? require('./assets/BtnAddTopSelectApp.png') : require('./assets/BtnAddTopApp.png')}/>
+					<Image style={styles.imgCabecalho} source={telaAtual.tela == "criaPost" ? require('./assets/BtnAddTopSelectApp.png') : require('./assets/BtnAddTopApp.png')}/>
 				</Pressable>
-				<Pressable style={styles.btnCabecalho}>
-					<Image style={styles.imgCabecalho} source={require('./assets/BtnConfigTopApp.png')}/>
+				<Pressable style={[styles.btnCabecalho, intStyles.btnConfig]} onPress={() => {trocaTela("config")}}>
+					<Image style={styles.imgCabecalho} source={telaAtual.tela == "config" ? require('./assets/BtnConfigTopSelectApp.png') : require('./assets/BtnConfigTopApp.png')}/>
 				</Pressable>
 			</View>
 		</View>
@@ -220,9 +231,9 @@ export default function App() {
 
 		<View style={{flex: 1}}>
 
-			<Telas.Provider value={trocaTela}>
+			<WrapperContext ip={{ipAddress: ip, setIpAddress: setIp}} setTela={trocaTela}>
 				{abreTela()}
-			</Telas.Provider>
+			</WrapperContext>
 
 		</View>
 
@@ -232,13 +243,13 @@ export default function App() {
 		{!keyboardActive ?
 		<View style={[styles.rodape, intStyles.rodape]}>
 			<Pressable style={[styles.btnRodape, intStyles.btnInicio]} onPress={() => {trocaTela("inicio")}}>
-				<Image style={styles.imgRodape} source={telaAtual == 'inicio' ? require('./assets/BtnInicioSelectBTApp.png') : require('./assets/BtnInicioBTApp.png')}></Image>
+				<Image style={styles.imgRodape} source={telaAtual.tela == 'inicio' ? require('./assets/BtnInicioSelectBTApp.png') : require('./assets/BtnInicioBTApp.png')}></Image>
 			</Pressable>
 			<Pressable style={[styles.btnRodape, intStyles.btnCalendario]} onPress={() => {trocaTela("calendario")}}>
-				<Image style={styles.imgRodape} source={telaAtual == 'calendario' ? require('./assets/BtnCalendarioSelectBTApp.png') : require('./assets/BtnCalendarioBTApp.png')}></Image>
+				<Image style={styles.imgRodape} source={telaAtual.tela == 'calendario' ? require('./assets/BtnCalendarioSelectBTApp.png') : require('./assets/BtnCalendarioBTApp.png')}></Image>
 			</Pressable>
 			<Pressable style={[styles.btnRodape, intStyles.btnHorarios]} onPress={() => {trocaTela("horario")}}>
-				<Image style={styles.imgRodape} source={telaAtual == 'horario' ? require('./assets/BtnHorarioSelectBTApp.png') : require('./assets/BtnHorarioBTApp.png')}></Image>
+				<Image style={styles.imgRodape} source={telaAtual.tela == 'horario' ? require('./assets/BtnHorarioSelectBTApp.png') : require('./assets/BtnHorarioBTApp.png')}></Image>
 			</Pressable>
 		</View> : <View/>}
 

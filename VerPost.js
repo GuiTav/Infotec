@@ -1,12 +1,12 @@
 
 import { Pressable, Image, Text, View, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect, useContext } from 'react';
-import { Contexto, Telas } from './Globais';
+import { Ip, Telas } from './Globais';
 
 
-function VerPost(props) {
+export default function VerPost(props) {
 
-	const ipAddress = React.useContext(Contexto).ipAddress;
+	const {ipAddress} = useContext(Ip);
 	const trocaTela = useContext(Telas);
 	const filterCateg = props.categ;
 
@@ -220,6 +220,3 @@ const styles = StyleSheet.create({
 	},
 
 });
-
-
-export default VerPost;

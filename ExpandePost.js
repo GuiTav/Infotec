@@ -1,17 +1,18 @@
 import { useContext, useEffect, useState } from 'react';
 import { StyleSheet, Text, View, Image, ScrollView, Pressable, Modal, ActivityIndicator, ToastAndroid } from 'react-native';
 import { StorageAccessFramework } from 'expo-file-system';
-import { Telas, Contexto } from './Globais';
+import { Telas, Ip } from './Globais';
 import { Buffer } from 'buffer';
 
 
 export default function ExpandePost(props) {
 	const post = props.post;
+
 	const dataPubli = new Date(post.dataPublicacao);
 	const dataEdicao = new Date(post.dataEdicao);
 
 	const trocaTela = useContext(Telas);
-	const ipAddress = useContext(Contexto).ipAddress;
+	const { ipAddress } = useContext(Ip);
 
 	const[maisOpcoes, setMaisOpcoes] = useState(false);
 	const[confirmaExclusao, setConfirmaExclusao] = useState(false);
@@ -82,6 +83,7 @@ export default function ExpandePost(props) {
 					uriArquivo,
 					Buffer.from(anexoJson.resposta[0].anexo.data).toString("base64"), {encoding: "base64"});
 			} catch (error) {
+				console.log(id);
 				ToastAndroid.show("Houve uma falha baixando o arquivo, por favor verifique sua conexão.", ToastAndroid.SHORT);
 				setLoading(false);
 				return;		
@@ -98,8 +100,6 @@ export default function ExpandePost(props) {
 
 	function Anexo({item}) {
 
-		const[downloadOpt, setDownloadOpt] = useState(false);
-
 		return (
 			<View style={{
 				width: "100%",
@@ -112,21 +112,6 @@ export default function ExpandePost(props) {
 				borderColor: "#ccc",
 				marginTop: 5
 			}}>
-				{downloadOpt ?
-				<Pressable onPress={() => {downloadAnexo(item.id)}} style={{
-					position: "absolute",
-					backgroundColor: "white",
-					right: 40,
-					width: 150,
-					height: 40,
-					zIndex: 5,
-					alignItems: "center",
-					justifyContent: "center",
-					borderWidth: 1,
-					borderRadius: 15
-				}}><Text style={{fontSize: 20}}>Download</Text></Pressable>
-			
-				: <></>}
 				<Image source={require('./assets/IconArquivo.png')} style={{
 					height: 20,
 					width: 20,
@@ -136,10 +121,10 @@ export default function ExpandePost(props) {
 				}}/>
 				<Text style={{flex: 1, color: "#555", fontSize: 15}}>{item.nomeArquivo}</Text>
 				<Pressable style={{width: 30, height: 30, justifyContent: "center", alignItems: "center"}}
-				onPress={() => {setDownloadOpt(!downloadOpt)}}>
+				onPress={() => {downloadAnexo(item.id)}}>
 					<Image 
-						style={{width: "70%", height: "70%", resizeMode: "contain", tintColor: "#999"}}
-						source={require('./assets/TresPontos.png')}/>
+						style={{width: "70%", height: "70%", resizeMode: "contain", tintColor: "#0880d5"}}
+						source={require('./assets/BtnDownload.png')}/>
 				</Pressable>
 			</View> 
 		);
@@ -229,14 +214,8 @@ export default function ExpandePost(props) {
 							);
 						})
 					}
-
-					{/* <FlatList 
-						style={{width: "100%"}}
-						data={objAnexos}
-						renderItem={Anexo}
-						keyExtractor={item => {item.id}}
-						ListEmptyComponent={<></>}/> */}
 				</View>
+				
         	</ScrollView>
 	    </View>
 	);
