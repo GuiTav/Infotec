@@ -1,9 +1,10 @@
 
-import { useContext, useEffect } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useContext, useEffect, useRef, useState } from "react";
+import { Image, Pressable, StyleSheet, Text, TextInput, ToastAndroid, View } from "react-native";
 import * as WebBrowser from 'expo-web-browser';
-import { makeRedirectUri, useAuthRequest, useAutoDiscovery } from "expo-auth-session";
-import { Ip } from "./Globais";
+import { exchangeCodeAsync, makeRedirectUri, useAuthRequest, useAutoDiscovery } from "expo-auth-session";
+import { Ip, User } from "./Globais";
+import { Buffer } from "buffer";
 
 
 WebBrowser.maybeCompleteAuthSession();
@@ -16,20 +17,140 @@ export default function Config() {
         quando formos liberar ao público, deixar esta opção ativa seria um problema. */
 
     const {ipAddress, setIpAddress} = useContext(Ip);
+    const {usuario, setUsuario} = useContext(User);
 
+
+    const [token, setToken] = useState(null);
     const discovery = useAutoDiscovery("https://login.microsoftonline.com/organizations/v2.0");
     const [request, response, promptAsync] = useAuthRequest(
         {
             clientId: "a0523025-10cb-4cb7-a7e5-e9400fa3e123",
-            scopes: ['openid', 'profile', 'email'],
+            scopes: ['openid', 'User.Read'],
             redirectUri: makeRedirectUri({
                 scheme: 'infotec',
                 path: 'auth',
                 useProxy: false
-            })
+            }),
+            extraParams: {prompt: "select_account"}
         },
         discovery
     );
+
+
+    useEffect(() => {
+        if (usuario == null) {
+            if (response != null) {
+                if (response.type == "success") {
+                    getToken();
+                }
+            }
+        }
+    }, [response]);
+
+
+    async function getToken(){
+        var tokenObject = await exchangeCodeAsync({
+            clientId: request.clientId,
+            scopes: request.scopes,
+            redirectUri: request.redirectUri,
+            code: response.params.code,
+            extraParams: {code_verifier: request.codeVerifier}
+        },
+        discovery);
+
+        setToken(tokenObject);
+    }
+
+
+    useEffect(() => {
+        if (token != null) {
+            buscaInfo();
+        }
+    }, [token]);
+
+
+    async function buscaInfo() {
+        try{
+            const controller = new AbortController();
+            setTimeout(() => {controller.abort()}, 20000);
+            var dados = await fetch("https://graph.microsoft.com/v1.0/me", {headers: { "Authorization": token.accessToken }, signal: controller.signal});
+            var dadosJson = await dados.json();
+    
+            var blobInfo = await fetch("https://graph.microsoft.com/v1.0/me/photos/240x240/$value", {headers: { "Authorization": token.accessToken }, signal: controller.signal});
+            var blob = await blobInfo.blob();
+        } catch (error) {
+            console.log(error);
+        }
+
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onload = () => {
+            const b64data = reader.result;
+            const cleanb64 = b64data.split(",")[1];
+            const hexadec = Buffer.from(cleanb64, "base64").toString("hex");
+            setUsuario({nome: dadosJson.displayName, email: dadosJson.mail, fotoPerfil: hexadec});
+        }
+    }
+
+
+    const primAtualizacao = useRef(true);
+
+    useEffect(() => {
+        if (primAtualizacao.current) {
+            primAtualizacao.current = false;
+        } else {
+            if (usuario != null){
+                salvaPerfil();
+            }
+        }
+    }, [usuario]);
+
+
+    async function salvaPerfil() {
+        var existeJson;
+
+        try {
+            var controller = new AbortController();
+            var timer = setTimeout(() => {controller.abort()}, 10000);
+            var perfilExiste = await fetch("http://" + ipAddress + ":8000/usuario/" + usuario.email, {signal: controller.signal});
+            existeJson = await perfilExiste.json();
+        } catch (error) {
+            console.log(error);
+            return;
+        } finally {
+            clearTimeout(timer);
+        }
+
+
+        if (existeJson.resposta.length == 0){
+            var request = JSON.stringify({
+                tabela: "usuario",
+                dados: [usuario.nome, usuario.email, "0x" + usuario.fotoPerfil, 'user']
+            });
+
+            var postJson;
+
+            try {
+                var controllerPost = new AbortController();
+                var timerPost = setTimeout(() => {controllerPost.abort()}, 15000);
+                var add = await fetch("http://" + ipAddress + ":8000/", {body: request, method: "POST", signal: controllerPost.signal})
+                postJson = await add.json();
+            } catch (error) {
+                ToastAndroid.show("Houve uma falha ao cadastrar o seu perfil, tente novamente", ToastAndroid.SHORT);
+                return;
+            } finally {
+                clearTimeout(timerPost);
+            }
+            ToastAndroid.show("Perfil criado!", ToastAndroid.SHORT);
+        }
+    }
+
+
+
+    function saidaUsuario() {
+        setToken(null);
+        setUsuario(null);
+    }
 
 
     return (
@@ -40,12 +161,28 @@ export default function Config() {
                 <Text style={styles.txtIp}>Endereço IP:</Text>
                 <TextInput style={styles.inputIp} onChangeText={(text) => {setIpAddress(text)}}>{ipAddress}</TextInput>
 
-                <Pressable style={styles.btnLogin} onPress={() => {promptAsync()}}>
-                    <Text style={styles.txtLogin}>Fazer login</Text>
-                </Pressable>
+                {usuario != null ?
+                    <View style={styles.perfil}>
+                        <Image style={styles.imgPerfil} source={{uri: "data:image/jpg;base64," + Buffer.from(usuario.fotoPerfil, "hex").toString("base64")}}/>
+                        <View style={styles.nomeEmail}>
+                            <Text style={styles.txtPerfil}>{usuario.nome}</Text>
+                            <Text style={styles.txtPerfil}>{usuario.email}</Text>
+                        </View>
+                    </View>
+                :
+                    <></>
+                }
 
 
-                <Text style={{marginTop: 30}}>{JSON.stringify(response)}</Text>
+                {usuario == null ?
+                    <Pressable style={styles.btnLogin} onPress={() => {promptAsync()}}>
+                        <Text style={styles.txtLogin}>Fazer login</Text>
+                    </Pressable>
+                :
+                    <Pressable style={[styles.btnLogin, {backgroundColor: "red"}]} onPress={() => {saidaUsuario()}}>
+                        <Text style={styles.txtLogin}>Sair</Text>
+                    </Pressable>
+                }
             </View>
         </View>
     );
@@ -83,15 +220,39 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderRadius: 15,
         borderColor: "#ff3366",
-        color: "#ff3366"
+        color: "#ff3366",
+        marginBottom: 20
+    },
+
+    perfil: {
+        width: "100%",
+        flexDirection: "row",
+        alignItems: "center",
+        padding: 20
+    },
+
+    imgPerfil: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        marginRight: 20,
+        resizeMode: "contain",
+        backgroundColor: "red"
+    },
+
+    nomeEmail: {
+        flex: 1
+    },
+
+    txtPerfil: {
+        fontSize: 15
     },
 
     btnLogin: {
-        paddingHorizontal: 25,
-        paddingVertical: 15,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
         backgroundColor: "#0880d5",
-        borderRadius: 15,
-        marginTop: 40
+        borderRadius: 15
     },
 
     txtLogin: {

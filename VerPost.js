@@ -2,6 +2,7 @@
 import { Pressable, Image, Text, View, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import React, { useState, useEffect, useContext } from 'react';
 import { Ip, Telas } from './Globais';
+import { Buffer } from "buffer";
 
 
 export default function VerPost(props) {
@@ -79,7 +80,7 @@ export default function VerPost(props) {
 			<View style={{width: "100%", alignItems: "center"}}>
 				<Pressable style={styles.card} onPress={() => {trocaTela("expandePost", item)}}>
 					<View style={styles.visualPerfil}>
-						<Image style={styles.fotoPerfil} source={{uri: item["fotoPerfil"]}}/>
+						<Image style={styles.fotoPerfil} source={{uri: "data:image/jpg;base64," + Buffer.from(item.fotoPerfil, "hex").toString("base64")}}/>
 						<Text>{item["nomeUsuario"]}</Text>
 					</View>
 					<View style={styles.conteudo}>
@@ -136,27 +137,27 @@ export default function VerPost(props) {
 	return (
 		<View style={{width: "100%", flex: 1}}>
 			{!refreshing ?
-					<FlatList
-						style={{width: "100%"}}
-						data={filterCateg == undefined ? respFetch['resposta'] : filteredPosts}
-						renderItem={Post}
-						keyExtractor={item => item.idPublicacao}
-						ListEmptyComponent={respFetch['erro'] != null ?
-							<Text style={{fontSize: 25, marginTop: 30, paddingHorizontal: "10%", textAlign: "center"}}>
-								{respFetch["erro"]}
-							</Text>
-							:
-							<Text style={{marginTop: 30, fontSize: 20, textAlign: "center"}}>Tão vazio...</Text>
-						}
-						refreshing={refreshing}
-						onRefresh={() => {
-							getPosts();
-						}}
-					/>
-				:
-					<View style={{height: "100%", alignItems: "center", justifyContent: "center"}}>
-						<ActivityIndicator size={'large'} color={"#190933"} />
-					</View>
+				<FlatList
+					style={{width: "100%"}}
+					data={filterCateg == undefined ? respFetch['resposta'] : filteredPosts}
+					renderItem={Post}
+					keyExtractor={item => item.idPublicacao}
+					ListEmptyComponent={respFetch['erro'] != null ?
+						<Text style={{fontSize: 25, marginTop: 30, paddingHorizontal: "10%", textAlign: "center"}}>
+							{respFetch["erro"]}
+						</Text>
+						:
+						<Text style={{marginTop: 30, fontSize: 20, textAlign: "center"}}>Tão vazio...</Text>
+					}
+					refreshing={refreshing}
+					onRefresh={() => {
+						getPosts();
+					}}
+				/>
+			:
+				<View style={{height: "100%", alignItems: "center", justifyContent: "center"}}>
+					<ActivityIndicator size={'large'} color={"#190933"} />
+				</View>
 			}
 		</View>
 	);

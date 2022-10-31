@@ -13,15 +13,20 @@ export var Telas = React.createContext();
 /* Context para a função de setIp */
 export var Ip = React.createContext();
 
+export var User = React.createContext();
+
 
 export function WrapperContext(props) {
     const setTela = props.setTela;
     const {ipAddress, setIpAddress} = props.ip;
+    const {usuario, setUsuario} = props.user;
     
     return(
         <Telas.Provider value={setTela}>
             <Ip.Provider value={{ipAddress: ipAddress, setIpAddress: setIpAddress}}>
-                {props.children}
+                <User.Provider value={{usuario: usuario, setUsuario: setUsuario}}>
+                    {props.children}
+                </User.Provider>
             </Ip.Provider>
         </Telas.Provider>
     )

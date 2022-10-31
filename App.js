@@ -12,7 +12,8 @@ import Config from './Config';
 export default function App() {
 	const categorias = useContext(Contexto).categorias;
 
-	const [ip, setIp] = useState("192.168.0.6");
+	const [ip, setIp] = useState(""); // Defina o ip da maquina host do servidor
+	const [usuario, setUsuario] = useState(null);
 
 	const [telaAtual, setTelaAtual] = useState({tela: "inicio", post: null});
 	const [stackTela, setStackTela] = useState([]);
@@ -231,7 +232,7 @@ export default function App() {
 
 		<View style={{flex: 1}}>
 
-			<WrapperContext ip={{ipAddress: ip, setIpAddress: setIp}} setTela={trocaTela}>
+			<WrapperContext ip={{ipAddress: ip, setIpAddress: setIp}} setTela={trocaTela} user={{usuario: usuario, setUsuario: setUsuario}}>
 				{abreTela()}
 			</WrapperContext>
 
