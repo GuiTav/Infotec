@@ -84,8 +84,8 @@ export default function VerPost(props) {
 						<Text>{item["nomeUsuario"]}</Text>
 					</View>
 					<View style={styles.conteudo}>
-						<Text style={styles.titulo}>{item["titulo"]}</Text>
-						<Text style={styles.texto}>{item["conteudo"]}</Text>
+						<Text style={styles.titulo} numberOfLines={3}>{item["titulo"]}</Text>
+						<Text style={styles.texto} numberOfLines={5}>{item["conteudo"]}</Text>
 					</View>
 					<Arquivos resp={item}/>
 					
@@ -216,8 +216,7 @@ const styles = StyleSheet.create({
 	},
 
 	texto:{
-		textAlign: "justify",
-		maxHeight: 80
+		textAlign: "justify"
 	},
 
 });

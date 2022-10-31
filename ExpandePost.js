@@ -178,10 +178,10 @@ export default function ExpandePost(props) {
 				<View>
 					<View style={styles.top}>
 						<View style={styles.prof}>
-								<Image style={styles.gato} source={{uri: post.fotoPerfil}}/>
+								<Image style={styles.gato} source={{uri: "data:image/jpg;base64," + Buffer.from(post.fotoPerfil, "hex").toString("base64")}}/>
 							<View style={styles.email}>
-								<Text>{post.nomeUsuario}</Text>
-								<Text>{post.email}</Text>
+								<Text numberOfLines={1}>{post.nomeUsuario}</Text>
+								<Text numberOfLines={1}>{post.email}</Text>
 							</View>
 						</View>
 
@@ -306,7 +306,8 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
-		marginBottom: 10
+		marginBottom: 10,
+		width: "100%"
 	},
 
 	btnMaisOpcoes: {
@@ -322,6 +323,7 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		backgroundColor: '#fff',
 		height: 40,
+		flex: 1
 	},
 	
 	gato:{
@@ -333,7 +335,8 @@ const styles = StyleSheet.create({
 	},
 	
 	email: {
-		flexDirection:'column'
+		flexDirection:'column',
+		flex: 1
 	},
 	
 	titulo:{
