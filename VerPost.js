@@ -8,7 +8,7 @@ import { Buffer } from "buffer";
 export default function VerPost(props) {
 
 	const {ipAddress} = useContext(Ip);
-	const trocaTela = useContext(Telas);
+	const {trocaTela} = useContext(Telas);
 	const filterCateg = props.categ;
 
 	const[respFetch, setRespFetch] = useState();
@@ -80,7 +80,7 @@ export default function VerPost(props) {
 			<View style={{width: "100%", alignItems: "center"}}>
 				<Pressable style={styles.card} onPress={() => {trocaTela("expandePost", item)}}>
 					<View style={styles.visualPerfil}>
-						<Image style={styles.fotoPerfil} source={{uri: "data:image/jpg;base64," + Buffer.from(item.fotoPerfil, "hex").toString("base64")}}/>
+						<Image style={styles.fotoPerfil} source={{uri: "data:image/jpg;base64," + Buffer.from(item.fotoPerfil || "", "hex").toString("base64")}}/>
 						<Text>{item["nomeUsuario"]}</Text>
 					</View>
 					<View style={styles.conteudo}>

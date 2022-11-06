@@ -1,5 +1,5 @@
 
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, TextInput, ToastAndroid, View } from "react-native";
 import * as WebBrowser from 'expo-web-browser';
 import { exchangeCodeAsync, makeRedirectUri, useAuthRequest, useAutoDiscovery } from "expo-auth-session";
@@ -72,14 +72,17 @@ export default function Config() {
     async function buscaInfo() {
         try{
             const controller = new AbortController();
-            setTimeout(() => {controller.abort()}, 20000);
+            var timeoutGraph = setTimeout(() => {controller.abort()}, 20000);
             var dados = await fetch("https://graph.microsoft.com/v1.0/me", {headers: { "Authorization": token.accessToken }, signal: controller.signal});
             var dadosJson = await dados.json();
     
             var blobInfo = await fetch("https://graph.microsoft.com/v1.0/me/photos/240x240/$value", {headers: { "Authorization": token.accessToken }, signal: controller.signal});
             var blob = await blobInfo.blob();
         } catch (error) {
-            console.log(error);
+            ToastAndroid.show("Houve um erro ao acessar suas informações, tente novamente", ToastAndroid.SHORT);
+            return;
+        } finally {
+            clearTimeout(timeoutGraph);
         }
 
         const reader = new FileReader();
@@ -88,34 +91,20 @@ export default function Config() {
             const b64data = reader.result;
             const cleanb64 = b64data.split(",")[1];
             const hexadec = Buffer.from(cleanb64, "base64").toString("hex");
-            setUsuario({nome: dadosJson.displayName, email: dadosJson.mail, fotoPerfil: hexadec});
+            salvaPerfil({nome: dadosJson.displayName, email: dadosJson.mail, fotoPerfil: hexadec});
         }
     }
 
-
-    const primAtualizacao = useRef(true);
-
-    useEffect(() => {
-        if (primAtualizacao.current) {
-            primAtualizacao.current = false;
-        } else {
-            if (usuario != null){
-                salvaPerfil();
-            }
-        }
-    }, [usuario]);
-
-
-    async function salvaPerfil() {
+    async function salvaPerfil({nome, email, fotoPerfil}) {
         var existeJson;
 
         try {
             var controller = new AbortController();
             var timer = setTimeout(() => {controller.abort()}, 10000);
-            var perfilExiste = await fetch("http://" + ipAddress + ":8000/usuario/" + usuario.email, {signal: controller.signal});
+            var perfilExiste = await fetch("http://" + ipAddress + ":8000/usuario/" + email, {signal: controller.signal});
             existeJson = await perfilExiste.json();
         } catch (error) {
-            console.log(error);
+            ToastAndroid.show("Houve uma falha ao identificar seu perfil nos nossos servidores.", ToastAndroid.SHORT);
             return;
         } finally {
             clearTimeout(timer);
@@ -125,8 +114,9 @@ export default function Config() {
         if (existeJson.resposta.length == 0){
             var request = JSON.stringify({
                 tabela: "usuario",
-                dados: [usuario.nome, usuario.email, "0x" + usuario.fotoPerfil, 'user']
+                dados: [nome, email, "0x" + fotoPerfil]
             });
+
 
             var postJson;
 
@@ -142,6 +132,68 @@ export default function Config() {
                 clearTimeout(timerPost);
             }
             ToastAndroid.show("Perfil criado!", ToastAndroid.SHORT);
+
+
+            var getJson;
+
+            try {
+                var controllerGet = new AbortController();
+                var timerGet = setTimeout(() => {controllerGet.abort()}, 15000);
+                var get = await fetch("http://" + ipAddress + ":8000/usuario/" + email, {signal: controllerGet.signal});
+                getJson = await get.json();
+            } catch (error) {
+                ToastAndroid.show("Houve um erro ao carregar o seu perfil", ToastAndroid.SHORT);
+                return;
+            } finally {
+                clearTimeout(timerGet);
+            }
+
+            setUsuario(getJson.resposta[0]);
+        }
+
+
+        else {
+            var request = JSON.stringify({
+                tabela: "usuario",
+                dados: {
+                    "nomeUsuario": nome,
+                    "email": email,
+                    "fotoPerfil": "0x" + fotoPerfil
+                },
+                id: existeJson.resposta[0].idUsuario
+            });
+
+
+            var updateJson;
+
+            try {
+                var controllerUpdate = new AbortController();
+                var timerUpdate = setTimeout(() => {controllerUpdate.abort()}, 15000);
+                var update = await fetch("http://" + ipAddress + ":8000/", {body: request, method: "PUT", signal: controllerUpdate.signal});
+                updateJson = await update.json();
+            } catch (error) {
+                ToastAndroid.show("Houve uma falha ao atualizarmos o seu perfil.", ToastAndroid.SHORT);
+            } finally {
+                clearTimeout(timerUpdate);
+            }
+
+
+            var getJson;
+
+            try {
+                var controllerGet = new AbortController();
+                var timerGet = setTimeout(() => {controllerGet.abort()}, 15000);
+                var get = await fetch("http://" + ipAddress + ":8000/usuario/" + email, {signal: controllerGet.signal});
+                getJson = await get.json();
+            } catch (error) {
+                ToastAndroid.show("Houve um erro ao carregar o seu perfil", ToastAndroid.SHORT);
+                return;
+            } finally {
+                clearTimeout(timerGet);
+            }
+
+            ToastAndroid.show("Perfil carregado!", ToastAndroid.SHORT);
+            setUsuario(getJson.resposta[0]);
         }
     }
 
@@ -163,9 +215,9 @@ export default function Config() {
 
                 {usuario != null ?
                     <View style={styles.perfil}>
-                        <Image style={styles.imgPerfil} source={{uri: "data:image/jpg;base64," + Buffer.from(usuario.fotoPerfil, "hex").toString("base64")}}/>
+                        <Image style={styles.imgPerfil} source={{uri: "data:image/jpg;base64," + Buffer.from(usuario.fotoPerfil || "", "hex").toString("base64")}}/>
                         <View style={styles.nomeEmail}>
-                            <Text style={styles.txtPerfil}>{usuario.nome}</Text>
+                            <Text style={styles.txtPerfil}>{usuario.nomeUsuario}</Text>
                             <Text style={styles.txtPerfil}>{usuario.email}</Text>
                         </View>
                     </View>

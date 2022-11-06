@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useContext } from "react";
 import { StyleSheet, View, TextInput, Text, Pressable, Modal, ScrollView, Image, ToastAndroid, ActivityIndicator} from "react-native";
-import { Contexto, Ip } from "./Globais";
+import { Contexto, Ip, Telas, User } from "./Globais";
 import RNDateTimePicker from "@react-native-community/datetimepicker";
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
@@ -13,6 +13,8 @@ export default function CriaPost(props) {
 
     const { ipAddress } = useContext(Ip);
     const categorias = useContext(Contexto).categorias;
+    const { voltaTela } = useContext(Telas);
+    
 
     const[titulo, setTitulo] = useState("");
     const[categVisible, setCategVisible] = useState(false);
@@ -22,8 +24,7 @@ export default function CriaPost(props) {
     const[dataValid, setDataValid] = useState(new Date());
     const[anexos, setAnexos] = useState([]);
     const[postando, setPostando] = useState(false);
-    const idAutor = 1; // Este ID deve vir de fora da tela. Por enquanto ele vai ser só mudado por aqui
-    
+    const { usuario } = useContext(User);
     
 
     /* ------------ PARA O MODO DE EDIÇÃO ------------ */
@@ -37,6 +38,20 @@ export default function CriaPost(props) {
 
 
     /* ------------------------ FUNÇÕES NÃO VISUAIS ---------------------- */
+
+    useEffect(() => {
+        if (usuario == null) {
+            ToastAndroid.show("Impossível criar ou editar um post sem estar logado.", ToastAndroid.SHORT);
+            voltaTela();
+        }
+
+        if (usuario.permissao == "PROFESSOR" || usuario.permissao == "MODERADOR") {}
+        
+        else {
+            ToastAndroid.show("Você não possui permissão para postar ou editar.", ToastAndroid.SHORT);
+            voltaTela();
+        }
+    });
 
     useEffect(() => {
         /* Apenas limpando o cache antes de executar qualquer coisa */
@@ -123,7 +138,7 @@ export default function CriaPost(props) {
             dataValid.toISOString().split("T")[0],
             new Date().toISOString().split("T")[0],
             conteudo,
-            idAutor
+            usuario.idUsuario
         ]};
 
         if (anexos.length != 0) {
@@ -177,7 +192,7 @@ export default function CriaPost(props) {
             "categoria": categoria,
             "validade": dataValid.toISOString().split("T")[0],
             "conteudo": conteudo,
-            "idAutor": idAutor
+            "idAutor": usuario.idUsuario
             },
         id: post.idPublicacao};
         request = JSON.stringify(request);
@@ -398,8 +413,8 @@ export default function CriaPost(props) {
 
 
                 {/* Botão de envio ou edição*/}
-                <Pressable style={styles.btnEnviar}>
-                    <Text style={styles.txtBtnEnviar} onPress={() => {post == undefined ? enviaPost() : editaPost()}}>
+                <Pressable style={styles.btnEnviar} onPress={() => {post == undefined ? enviaPost() : editaPost()}}>
+                    <Text style={styles.txtBtnEnviar}>
                         {post == undefined ? "Enviar" : "Editar"}
                     </Text>
                 </Pressable>

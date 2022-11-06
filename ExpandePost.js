@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { StyleSheet, Text, View, Image, ScrollView, Pressable, Modal, ActivityIndicator, ToastAndroid } from 'react-native';
 import { StorageAccessFramework } from 'expo-file-system';
-import { Telas, Ip } from './Globais';
+import { Telas, Ip, User } from './Globais';
 import { Buffer } from 'buffer';
 
 
@@ -11,8 +11,9 @@ export default function ExpandePost(props) {
 	const dataPubli = new Date(post.dataPublicacao);
 	const dataEdicao = new Date(post.dataEdicao);
 
-	const trocaTela = useContext(Telas);
+	const { trocaTela } = useContext(Telas);
 	const { ipAddress } = useContext(Ip);
+	const { usuario } = useContext(User);
 
 	const[maisOpcoes, setMaisOpcoes] = useState(false);
 	const[confirmaExclusao, setConfirmaExclusao] = useState(false);
@@ -41,6 +42,18 @@ export default function ExpandePost(props) {
 
 
 	async function deletaPost() {
+		if (usuario == null) {
+			ToastAndroid.show("Não é possível deletar posts sem fazer login.", ToastAndroid.SHORT);
+			return;
+		}
+
+		if (usuario.permissao == "MODERADOR" || usuario.permissao == "PROFESSOR") {}
+
+		else {
+			ToastAndroid.show("Apeanas professores e moderadores podem deletar.", ToastAndroid.SHORT);
+			return;
+		}
+
 		setLoading(true);
 
 		try {
@@ -83,7 +96,6 @@ export default function ExpandePost(props) {
 					uriArquivo,
 					Buffer.from(anexoJson.resposta[0].anexo.data).toString("base64"), {encoding: "base64"});
 			} catch (error) {
-				console.log(id);
 				ToastAndroid.show("Houve uma falha baixando o arquivo, por favor verifique sua conexão.", ToastAndroid.SHORT);
 				setLoading(false);
 				return;		
@@ -178,18 +190,25 @@ export default function ExpandePost(props) {
 				<View>
 					<View style={styles.top}>
 						<View style={styles.prof}>
-								<Image style={styles.gato} source={{uri: "data:image/jpg;base64," + Buffer.from(post.fotoPerfil, "hex").toString("base64")}}/>
+								<Image style={styles.gato} source={{uri: "data:image/jpg;base64," + Buffer.from(post.fotoPerfil || "", "hex").toString("base64")}}/>
 							<View style={styles.email}>
 								<Text numberOfLines={1}>{post.nomeUsuario}</Text>
 								<Text numberOfLines={1}>{post.email}</Text>
 							</View>
 						</View>
 
-						<Pressable style={styles.btnMaisOpcoes} onPress={() => {setMaisOpcoes(true)}}>
-							<Image
-								style={{width: "70%", height: "70%", resizeMode: "contain", tintColor: "#999"}}
-								source={require('./assets/TresPontos.png')}/>
-						</Pressable>
+						{usuario != null ?
+							usuario.permissao == "PROFESSOR" || usuario.permissao == "MODERADOR" ?
+								<Pressable style={styles.btnMaisOpcoes} onPress={() => {setMaisOpcoes(true)}}>
+									<Image
+										style={{width: "70%", height: "70%", resizeMode: "contain", tintColor: "#999"}}
+										source={require('./assets/TresPontos.png')}/>
+								</Pressable>
+							:
+								<></>
+						:
+							<></>
+						}
 
 					</View>
 

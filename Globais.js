@@ -6,7 +6,7 @@ export var Contexto = React.createContext({
 });
 
 
-/* Este context representa a função de trocar tela, que altera os valores do hook telaAtual,
+/* Este context representa a função de trocar tela e de voltar tela, que altera os valores do hook telaAtual,
 para que ocorra a troca de tela */
 export var Telas = React.createContext();
 
@@ -17,12 +17,12 @@ export var User = React.createContext();
 
 
 export function WrapperContext(props) {
-    const setTela = props.setTela;
+    const {trocaTela, voltaTela} = props.setTela;
     const {ipAddress, setIpAddress} = props.ip;
     const {usuario, setUsuario} = props.user;
     
     return(
-        <Telas.Provider value={setTela}>
+        <Telas.Provider value={{trocaTela: trocaTela, voltaTela: voltaTela}}>
             <Ip.Provider value={{ipAddress: ipAddress, setIpAddress: setIpAddress}}>
                 <User.Provider value={{usuario: usuario, setUsuario: setUsuario}}>
                     {props.children}

@@ -12,7 +12,7 @@ import Config from './Config';
 export default function App() {
 	const categorias = useContext(Contexto).categorias;
 
-	const [ip, setIp] = useState(""); // Defina o ip da maquina host do servidor
+	const [ip, setIp] = useState("192.168.0.6"); // Defina o ip da maquina host do servidor
 	const [usuario, setUsuario] = useState(null);
 
 	const [telaAtual, setTelaAtual] = useState({tela: "inicio", post: null});
@@ -74,37 +74,36 @@ export default function App() {
 	}
 
 
-
-	BackHandler.addEventListener('hardwareBackPress', () => {
+	function voltaTela() {
 		var arrTela = stackTela;
 		var arrPost = stackPosts;
-
+	
 		if (arrTela.length == 0) {
 			BackHandler.exitApp();
 		}
-
+	
 		arrTela.pop();
-		var postExcluido = arrPost.pop();
-
+		arrPost.pop();
+	
 		if (arrTela.length == 0) {
 			setTelaAtual({tela: "inicio", post: null});
 			return true;
 		}
-
+	
 		// O post precisa vir primeiro, pois ele precisa ja estar setado quando a tela trocar
 		setTelaAtual({tela: arrTela[arrTela.length - 1], post: arrPost[arrPost.length - 1]});
 		return true;
-	});
+	}
+
+	BackHandler.addEventListener('hardwareBackPress', voltaTela);
 
 
+	
 	useEffect(() => {
 		setFilterActive(false);
 		setFilterCateg();
-/* 		console.log(stackPosts);
-		console.log(" ");
-		console.log(stackTela);
-		console.log("=========================================================="); */
 	}, [telaAtual]);
+
 
 	useEffect(() => {
 		Keyboard.addListener('keyboardDidShow', () => {
@@ -187,17 +186,25 @@ export default function App() {
 			<View style={[styles.headerBtns, intStyles.headerBtns]}>
 				
 				{telaAtual.tela == "inicio" ?
-				<Pressable style={filterActive ? [styles.btnCabecalho, {backgroundColor: "#0880d5"}] : styles.btnCabecalho}
-				onPress={() => {setFilterActive(!filterActive)}}>
-					<Image style={styles.imgCabecalho} source={filterActive ? require('./assets/BtnFilterTopSelectApp.png') : require('./assets/BtnFilterTopApp.png')}/>
-				</Pressable> 
+					<Pressable style={filterActive ? [styles.btnCabecalho, {backgroundColor: "#0880d5"}] : styles.btnCabecalho}
+					onPress={() => {setFilterActive(!filterActive)}}>
+						<Image style={styles.imgCabecalho} source={filterActive ? require('./assets/BtnFilterTopSelectApp.png') : require('./assets/BtnFilterTopApp.png')}/>
+					</Pressable>
 				:
-				/* Adiciona uma view vazia apenas para manter o layout de antes, quando havia botão */
-				<View style={styles.btnCabecalho}></View>}
+					/* Adiciona uma view vazia apenas para manter o layout de antes, quando havia botão */
+					<View style={styles.btnCabecalho}></View>
+				}
 
-				<Pressable style={[styles.btnCabecalho, intStyles.btnAddPost]} onPress={() => {trocaTela("criaPost")}}>
-					<Image style={styles.imgCabecalho} source={telaAtual.tela == "criaPost" ? require('./assets/BtnAddTopSelectApp.png') : require('./assets/BtnAddTopApp.png')}/>
-				</Pressable>
+				{usuario != null ? 
+					usuario.permissao == "PROFESSOR" || usuario.permissao == "MODERADOR" ?
+						<Pressable style={[styles.btnCabecalho, intStyles.btnAddPost]} onPress={() => {trocaTela("criaPost")}}>
+							<Image style={styles.imgCabecalho} source={telaAtual.tela == "criaPost" ? require('./assets/BtnAddTopSelectApp.png') : require('./assets/BtnAddTopApp.png')}/>
+						</Pressable>
+					:
+						<></>
+				:
+					<></>
+				}
 				<Pressable style={[styles.btnCabecalho, intStyles.btnConfig]} onPress={() => {trocaTela("config")}}>
 					<Image style={styles.imgCabecalho} source={telaAtual.tela == "config" ? require('./assets/BtnConfigTopSelectApp.png') : require('./assets/BtnConfigTopApp.png')}/>
 				</Pressable>
@@ -232,7 +239,7 @@ export default function App() {
 
 		<View style={{flex: 1}}>
 
-			<WrapperContext ip={{ipAddress: ip, setIpAddress: setIp}} setTela={trocaTela} user={{usuario: usuario, setUsuario: setUsuario}}>
+			<WrapperContext ip={{ipAddress: ip, setIpAddress: setIp}} setTela={{voltaTela: voltaTela, trocaTela: trocaTela}} user={{usuario: usuario, setUsuario: setUsuario}}>
 				{abreTela()}
 			</WrapperContext>
 
@@ -291,16 +298,16 @@ const styles = StyleSheet.create({
 	
 
 	headerBtns: {
-		width: "40%",
 		height: "100%",
 		flexDirection: "row",
-		alignItems: "center"
+		alignItems: "center",
+		justifyContent: "flex-end"
 	},
 
 	btnCabecalho: {
-		flex: 1,
+		width: 45,
 		height: "100%",
-		marginRight: "3%",
+		marginHorizontal: 3,
 		justifyContent: "center",
 		alignItems: "center"
 	},

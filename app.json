@@ -4,7 +4,7 @@
     "slug": "Infotec",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/IconeApp.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/TelaInicialApp.png",
@@ -22,13 +22,13 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
+        "foregroundImage": "./assets/IconeAppSemFundo.png",
+        "backgroundColor": "#190933"
       },
       "package": "com.DevStack.Infotec"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/IconeApp.png"
     },
     "extra": {
       "eas": {
