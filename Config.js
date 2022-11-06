@@ -76,7 +76,7 @@ export default function Config() {
             var dados = await fetch("https://graph.microsoft.com/v1.0/me", {headers: { "Authorization": token.accessToken }, signal: controller.signal});
             var dadosJson = await dados.json();
     
-            var blobInfo = await fetch("https://graph.microsoft.com/v1.0/me/photos/240x240/$value", {headers: { "Authorization": token.accessToken }, signal: controller.signal});
+            var blobInfo = await fetch("https://graph.microsoft.com/v1.0/me/photos/120x120/$value", {headers: { "Authorization": token.accessToken }, signal: controller.signal});
             var blob = await blobInfo.blob();
         } catch (error) {
             ToastAndroid.show("Houve um erro ao acessar suas informações, tente novamente", ToastAndroid.SHORT);
