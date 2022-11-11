@@ -6,6 +6,7 @@ import VerPost from './VerPost';
 import CriaPost from './CriaPost';
 import ExpandePost from './ExpandePost';
 import Config from './Config';
+import Pdfs from './Pdfs';
 
 
 
@@ -42,6 +43,12 @@ export default function App() {
 
 			case "config":
 				return <Config />
+
+			case "calendario":
+				return <Pdfs tela="calendario" />
+			
+			case "horario":
+				return <Pdfs tela="horarios" />
 		
 			default:
 				return <></>;
